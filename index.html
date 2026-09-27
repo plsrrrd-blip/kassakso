@@ -3,244 +3,650 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Самообслуживание | Касса</title>
+    <title>Касса Самообслуживания + QR Оплата</title>
+    <!-- Tailwind CSS for modern responsive design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for retail icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- MQTT Client for real-time Phone <-> POS communication over Internet -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
-        body { background: #f0f2f5; color: #333; height: 100vh; display: flex; flex-direction: column; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
         
-        header { background: #0078d7; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        header h1 { font-size: 24px; font-weight: 600; }
-        .status-badge { background: #28a745; padding: 5px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; }
-
-        main { flex: 1; display: grid; grid-template-columns: 1fr 380px; gap: 20px; padding: 20px; overflow: hidden; }
-
-        .left-panel { background: white; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .scanner-input { width: 100%; padding: 15px; font-size: 18px; border: 2px solid #0078d7; border-radius: 8px; margin-bottom: 20px; outline: none; }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        .cart-table-wrapper { flex: 1; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th, td { padding: 14px 16px; border-bottom: 1px solid #eee; }
-        th { background: #f8f9fa; position: sticky; top: 0; color: #666; font-size: 14px; }
-        tr:nth-child(even) { background-color: #fafafa; }
-        
-        .delete-btn { background: #ff4d4f; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .delete-btn:hover { background: #d9363e; }
+        /* Smooth transitions & animations */
+        .pulse-subtle { animation: pulse-subtle 2s infinite; }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.95; transform: scale(0.99); }
+        }
 
-        .right-panel { background: white; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .summary-card { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
-        .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 16px; color: #555; }
-        .summary-row.total { font-size: 28px; font-weight: bold; color: #0078d7; border-top: 2px dashed #ccc; padding-top: 15px; margin-top: 10px; margin-bottom: 0; }
-
-        .pay-btn { background: #28a745; color: white; border: none; padding: 20px; font-size: 22px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background 0.2s; width: 100%; }
-        .pay-btn:hover { background: #218838; }
-
-        /* Modal Overlay */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 100; }
-        .modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 420px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal h2 { margin-bottom: 15px; color: #0078d7; }
-        .qr-placeholder { background: #f0f0f0; border: 2px dashed #bbb; border-radius: 8px; padding: 30px; margin: 20px 0; font-size: 14px; color: #666; word-break: break-all; }
-        .close-btn { background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        
-        .age-warning { color: #d9363e; font-size: 18px; font-weight: bold; margin: 15px 0; }
+        .slide-up {
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
-<body>
+<body class="bg-slate-900 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
 
-    <header>
-        <h1>🛒 Касса Самообслуживания</h1>
-        <div class="status-badge">🟢 Касса готова</div>
-    </header>
+    <div id="app" class="w-full min-h-screen flex flex-col">
+        <!-- Top Helper Navigation Bar -->
+        <header class="bg-slate-950 text-slate-400 px-4 py-2 text-xs flex justify-between items-center border-b border-slate-800 z-50">
+            <div class="flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                <span class="font-mono text-slate-300" id="syncStatus">Сеть: Подключение...</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleGithubHelp()" class="hover:text-emerald-400 transition-colors flex items-center gap-1">
+                    <i class="fa-solid fa-circle-question"></i> Как выложить на GitHub
+                </button>
+                <a href="?" id="resetViewLink" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-1 rounded transition-colors text-[11px]">
+                    <i class="fa-solid fa-store"></i> Режим Кассы
+                </a>
+            </div>
+        </header>
 
-    <main>
-        <div class="left-panel">
-            <input type="text" id="barcodeInput" class="scanner-input" placeholder="Отсканируйте штрихкод или введите вручную..." autofocus>
-            
-            <div class="cart-table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Товар</th>
-                            <th>Кол-во</th>
-                            <th>Цена</th>
-                            <th>Сумма</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="cartBody">
-                        <!-- Товары будут добавляться сюда -->
-                    </tbody>
-                </table>
+        <div id="githubModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-slate-800 border border-slate-700 text-slate-200 max-w-xl w-full rounded-2xl p-6 shadow-2xl relative">
+                <button onclick="toggleGithubHelp()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+                <h3 class="text-xl font-bold text-white mb-3 flex items-center gap-2">
+                    <i class="fa-brands fa-github text-emerald-400"></i> Как загрузить на GitHub Pages
+                </h3>
+                <ol class="list-decimal list-inside space-style space-y-2 text-sm text-slate-300">
+                    <li>Создайте новый публичный репозиторий на <b>GitHub.com</b> (назовите, например, <code class="bg-slate-900 px-1 py-0.5 rounded text-emerald-400">kassa</code>).</li>
+                    <li>Загрузите этот файл и переименуйте его строго в <code class="bg-slate-900 px-1 py-0.5 rounded text-emerald-400">index.html</code>.</li>
+                    <li>Перейдите в репозитории: <b>Settings &rarr; Pages</b>.</li>
+                    <li>В поле <b>Branch</b> выберите <code class="bg-slate-900 px-1 py-0.5 rounded">main</code> (или <code class="bg-slate-900 px-1 py-0.5 rounded">master</code>) и нажмите <b>Save</b>.</li>
+                    <li>Через 1-2 минуты у вас появится готовая ссылка на кассу!</li>
+                </ol>
+                <p class="mt-4 text-xs text-slate-400 bg-slate-900/60 p-3 rounded-lg border border-slate-700/50">
+                    <i class="fa-solid fa-circle-info text-emerald-400"></i> Вы сможете открыть кассу на компьютере, сгенерировать QR-код, отсканировать его настоящим телефоном — и оплата на телефоне сразу отобразится на кассе!
+                </p>
+                <button onclick="toggleGithubHelp()" class="mt-5 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-xl transition">Понятно!</button>
             </div>
         </div>
 
-        <div class="right-panel">
+        <!-- ================================================================= -->
+        <!-- VIEW 1: POS CASH REGISTER INTERFACE (Desktop / Tablet)            -->
+        <!-- ================================================================= -->
+        <main id="posView" class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 bg-slate-900">
+            <!-- Left Side: Catalog of Goods (8 Cols) -->
+            <section class="lg:col-span-7 xl:col-span-8 p-4 md:p-6 flex flex-col justify-between border-r border-slate-800">
+                <div>
+                    <!-- Header -->
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-cash-register text-emerald-400"></i> Экспресс Касса #1
+                            </h1>
+                            <p class="text-xs text-slate-400">Выберите товары для добавления в чек</p>
+                        </div>
+                        <span class="bg-emerald-950/80 border border-emerald-800/50 text-emerald-400 text-xs px-3 py-1.5 rounded-full font-mono flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Готова к работе
+                        </span>
+                    </div>
+
+                    <!-- Products Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4" id="productsGrid">
+                        <!-- Products rendered dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- Footer Hint -->
+                <div class="mt-6 pt-4 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-500">
+                    <span><i class="fa-solid fa-barcode"></i> Сканер штрих-кодов активен</span>
+                    <span>Режим: Автономный + MQTT Sync</span>
+                </div>
+            </section>
+
+            <!-- Right Side: Current Basket & Payment Controls (4 Cols) -->
+            <section class="lg:col-span-5 xl:col-span-4 bg-slate-950 p-4 md:p-6 flex flex-col justify-between h-full border-t lg:border-t-0 border-slate-800">
+                <div>
+                    <!-- Basket Title -->
+                    <div class="flex justify-between items-center pb-4 border-b border-slate-800 mb-4">
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-cart-shopping text-emerald-400"></i> Чек покупателя
+                        </h2>
+                        <button onclick="clearCart()" class="text-xs text-slate-400 hover:text-rose-400 transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can"></i> Очистить
+                        </button>
+                    </div>
+
+                    <!-- Cart Item List -->
+                    <div id="cartItems" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                        <!-- Cart Items dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Cart Total & Payment Buttons -->
+                <div class="mt-6 pt-4 border-t border-slate-800 space-y-4">
+                    <div class="space-y-1.5 text-sm">
+                        <div class="flex justify-between text-slate-400">
+                            <span>Позиций в чеке:</span>
+                            <span id="cartCount" class="font-medium text-slate-200">0</span>
+                        </div>
+                        <div class="flex justify-between text-slate-400">
+                            <span>Скидка / Акции:</span>
+                            <span class="text-emerald-400 font-medium">0 ₽</span>
+                        </div>
+                        <div class="flex justify-between text-2xl font-black text-white pt-2 border-t border-slate-800">
+                            <span>ИТОГО:</span>
+                            <span id="cartTotal" class="text-emerald-400">0 ₽</span>
+                        </div>
+                    </div>
+
+                    <!-- Pay with QR Button -->
+                    <button id="payButton" onclick="openQRPaymentModal()" disabled 
+                            class="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-slate-950 font-bold py-4 px-4 rounded-2xl shadow-lg shadow-emerald-950/30 transition-all flex items-center justify-center gap-3 text-lg">
+                        <i class="fa-solid fa-qrcode text-xl"></i>
+                        <span>Оплатить по QR-коду</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <div id="qrModal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-slate-700 text-slate-100 max-w-md w-full rounded-3xl p-6 shadow-2xl relative text-center slide-up">
+                <button onclick="closeQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-800 rounded-full w-8 h-8 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <!-- Header -->
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-3">
+                    <i class="fa-solid fa-qrcode text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Оплата через СБП / Банк</h3>
+                <p class="text-xs text-slate-400 mt-1">Отсканируйте QR-код камерой телефона</p>
+
+                <!-- Dynamic QR Code Canvas Holder -->
+                <div class="my-5 p-4 bg-white rounded-2xl inline-block shadow-inner relative group border-4 border-emerald-500/30">
+                    <div id="qrcodeCanvas" class="flex justify-center items-center min-w-[200px] min-h-[200px]"></div>
+                </div>
+
+                <!-- Order Info Card -->
+                <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800 text-left mb-4 space-y-1">
+                    <div class="flex justify-between text-xs text-slate-400">
+                        <span>Заказ №:</span>
+                        <span id="qrOrderId" class="font-mono text-slate-200">#0000</span>
+                    </div>
+                    <div class="flex justify-between text-sm font-bold text-white">
+                        <span>Сумма к оплате:</span>
+                        <span id="qrAmount" class="text-emerald-400">0 ₽</span>
+                    </div>
+                </div>
+
+                <!-- Waiting Spinner -->
+                <div class="flex items-center justify-center gap-2 text-xs text-emerald-400 bg-emerald-950/50 py-2.5 px-4 rounded-xl border border-emerald-800/40">
+                    <i class="fa-solid fa-circle-notch animate-spin text-sm"></i>
+                    <span>Ожидание сканирования и подтверждения...</span>
+                </div>
+
+                <!-- Quick Simulator Link for Testing on Same Device -->
+                <div class="mt-4 text-[11px] text-slate-500">
+                    Тестируете на одном устройстве? 
+                    <a id="directMobileLink" href="#" target="_blank" class="text-emerald-400 underline hover:text-emerald-300">
+                        Открыть окно оплаты <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="successModal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-50 flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-emerald-500/40 max-w-sm w-full rounded-3xl p-8 text-center shadow-2xl slide-up">
+                <div class="w-20 h-20 bg-emerald-500 text-slate-950 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg shadow-emerald-500/30 animate-bounce">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-1">Оплата прошла!</h3>
+                <p class="text-slate-400 text-xs mb-4">Деньги зачислены. Чек напечатан.</p>
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs text-slate-300 mb-6 font-mono">
+                    Чек №<span id="successOrderId">000</span> успешно оплачен
+                </div>
+                <button onclick="closeSuccessModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3 rounded-xl transition">
+                    Следующий покупатель
+                </button>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- VIEW 2: MOBILE BANK PAYMENT INTERFACE (`mode=mobile`)            -->
+        <!-- ================================================================= -->
+        <main id="mobileView" class="hidden flex-1 bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between max-w-md mx-auto w-full shadow-2xl border-x border-slate-800">
+            <!-- Bank Top App Header -->
             <div>
-                <div class="summary-card">
-                    <div class="summary-row">
-                        <span>Позиций в чеке:</span>
-                        <span id="totalItems">0</span>
+                <header class="bg-emerald-600 text-slate-950 p-5 rounded-b-3xl shadow-lg relative">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-slate-950/20 flex items-center justify-center font-black text-slate-950">
+                                S
+                            </div>
+                            <span class="font-bold tracking-tight text-slate-950">БыстрыйБанк СБП</span>
+                        </div>
+                        <span class="text-[10px] uppercase tracking-widest font-extrabold bg-slate-950/20 text-slate-950 px-2 py-0.5 rounded-full">
+                            Безопасно
+                        </span>
                     </div>
-                    <div class="summary-row">
-                        <span>Скидка:</span>
-                        <span id="discountValue">0 ₽</span>
+                    <div class="text-slate-950/80 text-xs">Запрос на оплату покупки</div>
+                    <div id="mobilePayAmount" class="text-3xl font-black text-slate-950 mt-1">0 ₽</div>
+                </header>
+
+                <!-- Payment Details Card -->
+                <div class="p-5 space-y-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                        <div class="flex justify-between text-xs pb-2 border-b border-slate-800/80">
+                            <span class="text-slate-400">Получатель:</span>
+                            <span class="font-medium text-slate-200">ООО «Игрушечная Касса»</span>
+                        </div>
+                        <div class="flex justify-between text-xs pb-2 border-b border-slate-800/80">
+                            <span class="text-slate-400">Номер заказа:</span>
+                            <span id="mobileOrderId" class="font-mono text-emerald-400">#0000</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Комиссия:</span>
+                            <span class="text-emerald-400 font-medium">0 ₽ (СБП)</span>
+                        </div>
                     </div>
-                    <div class="summary-row total">
-                        <span>Итого:</span>
-                        <span id="totalPrice">0 ₽</span>
+
+                    <!-- Custom Message Input Field -->
+                    <div class="space-y-1.5">
+                        <label for="senderNote" class="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                            <i class="fa-solid fa-comment-dots text-emerald-400"></i> Сообщение для кассира (необязательно):
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="senderNote" placeholder="Например: Спасибо за покупки!" 
+                                   class="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 text-slate-100 text-sm rounded-xl px-4 py-3 outline-none transition pr-10">
+                            <div class="absolute right-3 top-3.5 text-slate-500 text-sm">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <button class="pay-btn" onclick="startPayment()">К ОПЛАТЕ</button>
-        </div>
-    </main>
-
-    <!-- Модальное окно оплаты -->
-    <div class="modal" id="payModal">
-        <div class="modal-content">
-            <h2>Оплата по QR-коду</h2>
-            <p>Отсканируйте код через приложение банка</p>
-            <div class="qr-placeholder" id="qrContainer">
-                📱 [ QR-КОД ОПЛАТЫ ]
+            <!-- Pay Action Button -->
+            <div class="p-5 space-y-3 bg-slate-950 border-t border-slate-900">
+                <button id="mobilePayBtn" onclick="executeMobilePayment()" 
+                        class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-4 rounded-2xl text-lg shadow-lg shadow-emerald-950/50 transition-all flex items-center justify-center gap-2">
+                    <span>Подтвердить и оплатить</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <div class="text-center text-[11px] text-slate-500 flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-lock text-emerald-500"></i> Защищено сквозным шифрованием
+                </div>
             </div>
-            <p id="payAmount" style="font-size: 20px; font-weight: bold; margin-bottom: 10px;"></p>
-            <button class="close-btn" onclick="confirmPayment()">✅ Подтвердить оплату</button>
-            <button class="close-btn" style="background:#dc3545;" onclick="closeModal()">Отмена</button>
-        </div>
-    </div>
 
-    <!-- Модальное окно 18+ -->
-    <div class="modal" id="ageModal">
-        <div class="modal-content">
-            <h2>🔞 Требуется подтверждение</h2>
-            <p class="age-warning">В чеке есть алкоголь или табак!</p>
-            <p>Позовите консультанта для проверки паспорта.</p>
-            <p style="margin-top: 15px; font-size: 12px; color: #777;">Сканируйте бейдж сотрудника (STAFF-18)</p>
-            <button class="close-btn" style="margin-top: 20px;" onclick="approveAge()">Подтвердить (Консультант)</button>
-        </div>
+            <!-- Mobile Success Screen Overlay -->
+            <div id="mobileSuccessScreen" class="hidden absolute inset-0 bg-emerald-600 text-slate-950 z-50 p-6 flex flex-col justify-between text-center slide-up">
+                <div class="pt-12">
+                    <div class="w-24 h-24 bg-slate-950 text-emerald-400 rounded-full flex items-center justify-center text-5xl mx-auto mb-6 shadow-2xl">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <h2 class="text-3xl font-black mb-2">Оплата прошла!</h2>
+                    <p class="text-slate-950/80 text-sm">Сигнал отправлен на кассовый терминал</p>
+                    
+                    <div class="mt-8 bg-slate-950/10 backdrop-blur-md p-4 rounded-2xl text-slate-950 text-left space-y-2 border border-slate-950/10">
+                        <div class="flex justify-between text-xs">
+                            <span>Сумма:</span>
+                            <span id="mobileSuccessAmount" class="font-bold">0 ₽</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span>Заказ:</span>
+                            <span id="mobileSuccessOrderId" class="font-mono">#0000</span>
+                        </div>
+                        <div id="mobileSuccessNoteRow" class="hidden flex justify-between text-xs border-t border-slate-950/10 pt-2">
+                            <span>Сообщение:</span>
+                            <span id="mobileSuccessNote" class="italic"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pb-6">
+                    <p class="text-xs text-slate-950/70 mb-4">Можете закрыть эту вкладку на телефоне</p>
+                    <button onclick="window.close()" class="w-full bg-slate-950 text-white font-bold py-3.5 rounded-xl">
+                        Закрыть окно
+                    </button>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
-        // База данных товаров
-        const PRODUCTS = {
-            "4601234567890": { name: "Молоко 3.2%", price: 89, isAgeRestricted: false },
-            "4609876543210": { name: "Хлеб Нарезной", price: 45, isAgeRestricted: false },
-            "4605555555555": { name: "Энергетик Flash", price: 120, isAgeRestricted: true },
-            "4607777777777": { name: "Шоколад Alpengold", price: 99, isAgeRestricted: false }
-        };
+        // --- DEMO PRODUCTS CATALOG DATA ---
+        const PRODUCTS = [
+            { id: 1, name: "Яблоко Свежее", price: 50, icon: "fa-apple-whole", color: "from-red-500/20 to-rose-500/5 text-rose-400 border-rose-500/30" },
+            { id: 2, name: "Хлеб Бородинский", price: 40, icon: "fa-bread-slice", color: "from-amber-500/20 to-yellow-500/5 text-amber-400 border-amber-500/30" },
+            { id: 3, name: "Молоко 3.2%", price: 80, icon: "fa-bottle-droplet", color: "from-blue-500/20 to-cyan-500/5 text-cyan-400 border-cyan-500/30" },
+            { id: 4, name: "Шоколад Алёнка", price: 100, icon: "fa-cookie-bite", color: "from-orange-500/20 to-amber-500/5 text-orange-400 border-orange-500/30" },
+            { id: 5, name: "Кофе Латте", price: 150, icon: "fa-mug-hot", color: "from-yellow-600/20 to-amber-700/5 text-amber-500 border-amber-600/30" },
+            { id: 6, name: "Сок Апельсин", price: 120, icon: "fa-glass-water", color: "from-amber-400/20 to-orange-500/5 text-amber-300 border-amber-400/30" },
+            { id: 7, name: "Мороженое", price: 90, icon: "fa-ice-cream", color: "from-pink-500/20 to-rose-500/5 text-pink-400 border-pink-500/30" },
+            { id: 8, name: "Сыр Гауда", price: 210, icon: "fa-cheese", color: "from-yellow-400/20 to-amber-300/5 text-yellow-300 border-yellow-400/30" }
+        ];
 
+        // --- STATE MANAGEMENT ---
         let cart = [];
-        let isAgeApproved = false;
+        let currentOrderId = null;
+        let currentOrderAmount = 0;
+        let mqttClient = null;
+        const localChannel = new BroadcastChannel('kassa_qr_channel');
 
-        const barcodeInput = document.getElementById('barcodeInput');
-        const cartBody = document.getElementById('cartBody');
-        const totalPriceEl = document.getElementById('totalPrice');
-        const totalItemsEl = document.getElementById('totalItems');
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
 
-        // Автофокус на ввод штрихкода всегда
-        document.addEventListener('click', () => barcodeInput.focus());
+            // Setup Cloud MQTT Broker Connection
+            setupRealtimeSync();
 
-        barcodeInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const code = barcodeInput.value.trim();
-                barcodeInput.value = '';
-
-                if (code === 'STAFF-18') {
-                    approveAge();
-                    return;
-                }
-
-                if (PRODUCTS[code]) {
-                    addItemToCart(code);
-                } else {
-                    alert('Товар не найден! Попробуйте тестовые коды: 4601234567890, 4609876543210, 4605555555555');
-                }
+            if (mode === 'mobile') {
+                // Show Mobile View
+                document.getElementById('posView').classList.add('hidden');
+                document.getElementById('mobileView').classList.remove('hidden');
+                
+                const orderId = urlParams.get('order') || '0000';
+                const amount = urlParams.get('amount') || '0';
+                
+                document.getElementById('mobileOrderId').textContent = '#' + orderId;
+                document.getElementById('mobilePayAmount').textContent = amount + ' ₽';
+            } else {
+                // Show POS View
+                document.getElementById('posView').classList.remove('hidden');
+                document.getElementById('mobileView').classList.add('hidden');
+                renderProducts();
+                renderCart();
             }
+
+            // Listen to local browser messages (if tested on same device)
+            localChannel.onmessage = (event) => {
+                if (event.data && event.data.type === 'PAYMENT_SUCCESS') {
+                    handleSuccessfulPayment(event.data.orderId);
+                }
+            };
+
+            // Backup LocalStorage listener
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'last_paid_order' && e.newValue) {
+                    handleSuccessfulPayment(e.newValue);
+                }
+            });
         });
 
-        function addItemToCart(code) {
-            const product = PRODUCTS[code];
-            const existingItem = cart.find(item => item.code === code);
+        function setupRealtimeSync() {
+            const syncStatusEl = document.getElementById('syncStatus');
+            try {
+                // Public WebSocket MQTT Broker
+                mqttClient = mqtt.connect('wss://broker.hivemq.com:8000/mqtt', {
+                    clientId: 'kassa_pos_' + Math.random().toString(16).substr(2, 8),
+                    keepalive: 30
+                });
 
-            if (existingItem) {
-                existingItem.qty += 1;
-            } else {
-                cart.push({ ...product, code, qty: 1 });
+                mqttClient.on('connect', () => {
+                    syncStatusEl.textContent = 'Облако: Подключено';
+                    syncStatusEl.classList.remove('text-slate-300');
+                    syncStatusEl.classList.add('text-emerald-400');
+                    
+                    // Subscribe to global kassa topic
+                    mqttClient.subscribe('toy_kassa/payments/+', (err) => {
+                        if (!err) console.log("Subscribed to MQTT topics");
+                    });
+                });
+
+                mqttClient.on('message', (topic, message) => {
+                    try {
+                        const payload = JSON.parse(message.toString());
+                        if (payload.status === 'PAID' && payload.orderId === currentOrderId) {
+                            handleSuccessfulPayment(payload.orderId);
+                        }
+                    } catch(e) { console.error(e); }
+                });
+
+                mqttClient.on('error', () => {
+                    syncStatusEl.textContent = 'Облако: Офлайн (Локальный режим)';
+                });
+            } catch (err) {
+                console.warn("MQTT setup failed, falling back to BroadcastChannel", err);
             }
+        }
 
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = PRODUCTS.map(p => `
+                <div onclick="addToCart(${p.id})" 
+                     class="bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-emerald-500/50 p-4 rounded-2xl cursor-pointer transition-all duration-200 transform active:scale-95 flex flex-col justify-between group">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br ${p.color} border flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid ${p.icon}"></i>
+                    </div>
+                    <div>
+                        <div class="text-slate-200 font-medium text-sm group-hover:text-white transition-colors">${p.name}</div>
+                        <div class="text-emerald-400 font-bold text-base mt-1">${p.price} ₽</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(productId) {
+            const product = PRODUCTS.find(p => p.id === productId);
+            const existing = cart.find(item => item.id === productId);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            playBeepSound();
             renderCart();
         }
 
-        function removeItem(code) {
-            cart = cart.filter(item => item.code !== code);
+        function updateQty(productId, delta) {
+            const item = cart.find(i => i.id === productId);
+            if (!item) return;
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(i => i.id !== productId);
+            }
+            renderCart();
+        }
+
+        function clearCart() {
+            cart = [];
             renderCart();
         }
 
         function renderCart() {
-            cartBody.innerHTML = '';
-            let total = 0;
-            let itemsCount = 0;
+            const container = document.getElementById('cartItems');
+            const totalEl = document.getElementById('cartTotal');
+            const countEl = document.getElementById('cartCount');
+            const payBtn = document.getElementById('payButton');
 
-            cart.forEach(item => {
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-slate-600">
+                        <i class="fa-solid fa-basket-shopping text-4xl mb-2 opacity-40"></i>
+                        <p class="text-xs">Корзина пуста.<br>Выберите товары слева.</p>
+                    </div>
+                `;
+                totalEl.textContent = '0 ₽';
+                countEl.textContent = '0';
+                payBtn.disabled = true;
+                return;
+            }
+
+            let total = 0;
+            let count = 0;
+
+            container.innerHTML = cart.map(item => {
                 const itemTotal = item.price * item.qty;
                 total += itemTotal;
-                itemsCount += item.qty;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${item.name} ${item.isAgeRestricted ? '🔞' : ''}</td>
-                    <td>${item.qty} шт.</td>
-                    <td>${item.price} ₽</td>
-                    <td>${itemTotal} ₽</td>
-                    <td><button class="delete-btn" onclick="removeItem('${item.code}')">✕</button></td>
+                count += item.qty;
+                return `
+                    <div class="bg-slate-900 border border-slate-800/80 p-3 rounded-xl flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-300 text-xs flex-shrink-0">
+                                <i class="fa-solid ${item.icon}"></i>
+                            </div>
+                            <div class="truncate">
+                                <div class="text-xs font-medium text-slate-200 truncate">${item.name}</div>
+                                <div class="text-[11px] text-slate-500">${item.price} ₽ × ${item.qty}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <span class="text-xs font-bold text-emerald-400 mr-1">${itemTotal} ₽</span>
+                            <div class="flex items-center bg-slate-950 rounded-lg border border-slate-800">
+                                <button onclick="updateQty(${item.id}, -1)" class="w-6 h-6 text-slate-400 hover:text-white flex items-center justify-center text-xs">-</button>
+                                <span class="text-xs font-mono px-1 text-slate-200">${item.qty}</span>
+                                <button onclick="updateQty(${item.id}, 1)" class="w-6 h-6 text-slate-400 hover:text-white flex items-center justify-center text-xs">+</button>
+                            </div>
+                        </div>
+                    </div>
                 `;
-                cartBody.appendChild(tr);
+            }).join('');
+
+            totalEl.textContent = `${total} ₽`;
+            countEl.textContent = count.toString();
+            payBtn.disabled = false;
+            currentOrderAmount = total;
+        }
+
+        function openQRPaymentModal() {
+            if (cart.length === 0) return;
+
+            // Generate random unique order ID
+            currentOrderId = Math.floor(1000 + Math.random() * 9000).toString();
+            
+            document.getElementById('qrOrderId').textContent = '#' + currentOrderId;
+            document.getElementById('qrAmount').textContent = currentOrderAmount + ' ₽';
+
+            // Construct mobile payment link targeting current hosted URL
+            const baseUrl = window.location.origin + window.location.pathname;
+            const mobilePayUrl = `${baseUrl}?mode=mobile&order=${currentOrderId}&amount=${currentOrderAmount}`;
+
+            // Render QR Code inside Modal
+            const qrContainer = document.getElementById('qrcodeCanvas');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+                text: mobilePayUrl,
+                width: 200,
+                height: 200,
+                colorDark : "#020617",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
             });
 
-            totalPriceEl.textContent = `${total} ₽`;
-            totalItemsEl.textContent = itemsCount;
+            // Set quick link for testing in new tab
+            document.getElementById('directMobileLink').href = mobilePayUrl;
+
+            // Show Modal
+            document.getElementById('qrModal').classList.remove('hidden');
         }
 
-        function startPayment() {
-            if (cart.length === 0) {
-                alert('Корзина пуста!');
-                return;
-            }
-
-            const hasAgeRestricted = cart.some(item => item.isAgeRestricted);
-            if (hasAgeRestricted && !isAgeApproved) {
-                document.getElementById('ageModal').style.display = 'flex';
-                return;
-            }
-
-            showPaymentModal();
+        function closeQRModal() {
+            document.getElementById('qrModal').classList.add('hidden');
         }
 
-        function approveAge() {
-            isAgeApproved = true;
-            document.getElementById('ageModal').style.display = 'none';
-            alert('Возраст подтвержден!');
+        function executeMobilePayment() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('order') || '0000';
+            const amount = urlParams.get('amount') || '0';
+            const note = document.getElementById('senderNote').value;
+
+            const btn = document.getElementById('mobilePayBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Обработка...`;
+
+            setTimeout(() => {
+                const payload = {
+                    status: 'PAID',
+                    orderId: orderId,
+                    amount: amount,
+                    note: note
+                };
+
+                // 1. Broadcast via local BroadcastChannel
+                localChannel.postMessage({ type: 'PAYMENT_SUCCESS', orderId: orderId });
+
+                // 2. Set LocalStorage fallback
+                localStorage.setItem('last_paid_order', orderId + '_' + Date.now());
+
+                // 3. Publish via MQTT to Cloud
+                if (mqttClient && mqttClient.connected) {
+                    mqttClient.publish(`toy_kassa/payments/${orderId}`, JSON.stringify(payload));
+                }
+
+                // Show mobile success UI
+                document.getElementById('mobileSuccessAmount').textContent = amount + ' ₽';
+                document.getElementById('mobileSuccessOrderId').textContent = '#' + orderId;
+                if (note.trim()) {
+                    document.getElementById('mobileSuccessNote').textContent = note;
+                    document.getElementById('mobileSuccessNoteRow').classList.remove('hidden');
+                }
+                document.getElementById('mobileSuccessScreen').classList.remove('hidden');
+            }, 800);
         }
 
-        function showPaymentModal() {
-            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-            document.getElementById('payAmount').textContent = `К оплате: ${total} ₽`;
-            document.getElementById('payModal').style.display = 'flex';
+        function handleSuccessfulPayment(orderId) {
+            closeQRModal();
+            playSuccessSound();
+
+            document.getElementById('successOrderId').textContent = orderId;
+            document.getElementById('successModal').classList.remove('hidden');
+
+            // Clear Cart after successful payment
+            clearCart();
         }
 
-        function confirmPayment() {
-            alert('Оплата прошла успешно! Чек печатается...');
-            cart = [];
-            isAgeApproved = false;
-            renderCart();
-            closeModal();
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.add('hidden');
         }
 
-        function closeModal() {
-            document.getElementById('payModal').style.display = 'none';
-            document.getElementById('ageModal').style.display = 'none';
+        function toggleGithubHelp() {
+            const modal = document.getElementById('githubModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function playBeepSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.1);
+            } catch(e) {}
+        }
+
+        function playSuccessSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                // Play pleasant two-tone cash chime
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, index) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + index * 0.08);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime + index * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * 0.08 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + index * 0.08);
+                    osc.stop(ctx.currentTime + index * 0.08 + 0.3);
+                });
+            } catch(e) {}
         }
     </script>
 </body>
 </html>
-
