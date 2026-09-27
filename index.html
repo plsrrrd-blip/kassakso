@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Самообслуживание | Касса</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        body { background: #f0f2f5; color: #333; height: 100vh; display: flex; flex-direction: column; }
+        
+        header { background: #0078d7; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        header h1 { font-size: 24px; font-weight: 600; }
+        .status-badge { background: #28a745; padding: 5px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; }
+
+        main { flex: 1; display: grid; grid-template-columns: 1fr 380px; gap: 20px; padding: 20px; overflow: hidden; }
+
+        .left-panel { background: white; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .scanner-input { width: 100%; padding: 15px; font-size: 18px; border: 2px solid #0078d7; border-radius: 8px; margin-bottom: 20px; outline: none; }
+        
+        .cart-table-wrapper { flex: 1; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 14px 16px; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; position: sticky; top: 0; color: #666; font-size: 14px; }
+        tr:nth-child(even) { background-color: #fafafa; }
+        
+        .delete-btn { background: #ff4d4f; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .delete-btn:hover { background: #d9363e; }
+
+        .right-panel { background: white; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .summary-card { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 16px; color: #555; }
+        .summary-row.total { font-size: 28px; font-weight: bold; color: #0078d7; border-top: 2px dashed #ccc; padding-top: 15px; margin-top: 10px; margin-bottom: 0; }
+
+        .pay-btn { background: #28a745; color: white; border: none; padding: 20px; font-size: 22px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background 0.2s; width: 100%; }
+        .pay-btn:hover { background: #218838; }
+
+        /* Modal Overlay */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 100; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 420px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal h2 { margin-bottom: 15px; color: #0078d7; }
+        .qr-placeholder { background: #f0f0f0; border: 2px dashed #bbb; border-radius: 8px; padding: 30px; margin: 20px 0; font-size: 14px; color: #666; word-break: break-all; }
+        .close-btn { background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        
+        .age-warning { color: #d9363e; font-size: 18px; font-weight: bold; margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🛒 Касса Самообслуживания</h1>
+        <div class="status-badge">🟢 Касса готова</div>
+    </header>
+
+    <main>
+        <div class="left-panel">
+            <input type="text" id="barcodeInput" class="scanner-input" placeholder="Отсканируйте штрихкод или введите вручную..." autofocus>
+            
+            <div class="cart-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Товар</th>
+                            <th>Кол-во</th>
+                            <th>Цена</th>
+                            <th>Сумма</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cartBody">
+                        <!-- Товары будут добавляться сюда -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div>
+                <div class="summary-card">
+                    <div class="summary-row">
+                        <span>Позиций в чеке:</span>
+                        <span id="totalItems">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Скидка:</span>
+                        <span id="discountValue">0 ₽</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Итого:</span>
+                        <span id="totalPrice">0 ₽</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="pay-btn" onclick="startPayment()">К ОПЛАТЕ</button>
+        </div>
+    </main>
+
+    <!-- Модальное окно оплаты -->
+    <div class="modal" id="payModal">
+        <div class="modal-content">
+            <h2>Оплата по QR-коду</h2>
+            <p>Отсканируйте код через приложение банка</p>
+            <div class="qr-placeholder" id="qrContainer">
+                📱 [ QR-КОД ОПЛАТЫ ]
+            </div>
+            <p id="payAmount" style="font-size: 20px; font-weight: bold; margin-bottom: 10px;"></p>
+            <button class="close-btn" onclick="confirmPayment()">✅ Подтвердить оплату</button>
+            <button class="close-btn" style="background:#dc3545;" onclick="closeModal()">Отмена</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно 18+ -->
+    <div class="modal" id="ageModal">
+        <div class="modal-content">
+            <h2>🔞 Требуется подтверждение</h2>
+            <p class="age-warning">В чеке есть алкоголь или табак!</p>
+            <p>Позовите консультанта для проверки паспорта.</p>
+            <p style="margin-top: 15px; font-size: 12px; color: #777;">Сканируйте бейдж сотрудника (STAFF-18)</p>
+            <button class="close-btn" style="margin-top: 20px;" onclick="approveAge()">Подтвердить (Консультант)</button>
+        </div>
+    </div>
+
+    <script>
+        // База данных товаров
+        const PRODUCTS = {
+            "4601234567890": { name: "Молоко 3.2%", price: 89, isAgeRestricted: false },
+            "4609876543210": { name: "Хлеб Нарезной", price: 45, isAgeRestricted: false },
+            "4605555555555": { name: "Энергетик Flash", price: 120, isAgeRestricted: true },
+            "4607777777777": { name: "Шоколад Alpengold", price: 99, isAgeRestricted: false }
+        };
+
+        let cart = [];
+        let isAgeApproved = false;
+
+        const barcodeInput = document.getElementById('barcodeInput');
+        const cartBody = document.getElementById('cartBody');
+        const totalPriceEl = document.getElementById('totalPrice');
+        const totalItemsEl = document.getElementById('totalItems');
+
+        // Автофокус на ввод штрихкода всегда
+        document.addEventListener('click', () => barcodeInput.focus());
+
+        barcodeInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const code = barcodeInput.value.trim();
+                barcodeInput.value = '';
+
+                if (code === 'STAFF-18') {
+                    approveAge();
+                    return;
+                }
+
+                if (PRODUCTS[code]) {
+                    addItemToCart(code);
+                } else {
+                    alert('Товар не найден! Попробуйте тестовые коды: 4601234567890, 4609876543210, 4605555555555');
+                }
+            }
+        });
+
+        function addItemToCart(code) {
+            const product = PRODUCTS[code];
+            const existingItem = cart.find(item => item.code === code);
+
+            if (existingItem) {
+                existingItem.qty += 1;
+            } else {
+                cart.push({ ...product, code, qty: 1 });
+            }
+
+            renderCart();
+        }
+
+        function removeItem(code) {
+            cart = cart.filter(item => item.code !== code);
+            renderCart();
+        }
+
+        function renderCart() {
+            cartBody.innerHTML = '';
+            let total = 0;
+            let itemsCount = 0;
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.qty;
+                total += itemTotal;
+                itemsCount += item.qty;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.name} ${item.isAgeRestricted ? '🔞' : ''}</td>
+                    <td>${item.qty} шт.</td>
+                    <td>${item.price} ₽</td>
+                    <td>${itemTotal} ₽</td>
+                    <td><button class="delete-btn" onclick="removeItem('${item.code}')">✕</button></td>
+                `;
+                cartBody.appendChild(tr);
+            });
+
+            totalPriceEl.textContent = `${total} ₽`;
+            totalItemsEl.textContent = itemsCount;
+        }
+
+        function startPayment() {
+            if (cart.length === 0) {
+                alert('Корзина пуста!');
+                return;
+            }
+
+            const hasAgeRestricted = cart.some(item => item.isAgeRestricted);
+            if (hasAgeRestricted && !isAgeApproved) {
+                document.getElementById('ageModal').style.display = 'flex';
+                return;
+            }
+
+            showPaymentModal();
+        }
+
+        function approveAge() {
+            isAgeApproved = true;
+            document.getElementById('ageModal').style.display = 'none';
+            alert('Возраст подтвержден!');
+        }
+
+        function showPaymentModal() {
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            document.getElementById('payAmount').textContent = `К оплате: ${total} ₽`;
+            document.getElementById('payModal').style.display = 'flex';
+        }
+
+        function confirmPayment() {
+            alert('Оплата прошла успешно! Чек печатается...');
+            cart = [];
+            isAgeApproved = false;
+            renderCart();
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById('payModal').style.display = 'none';
+            document.getElementById('ageModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+
