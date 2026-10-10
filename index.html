@@ -1,885 +1,148 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Касса Самообслуживания</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- QR Code Generator -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- MQTT Client for Cross-Device WebSockets -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            user-select: none;
-        }
-        .animate-pulse-fast {
-            animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5b45e8">
+<title>Проверка цены</title>
+<style>
+:root{--bg:#f4f5fb;--ink:#20223a;--muted:#777b96;--purple:#6047ee;--pink:#ff4f9a;--cyan:#39c8df;--green:#16b981;--card:#fff;--line:#e6e7f1}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,#eee6ff 0,transparent 34%),var(--bg);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+button,input,select{font:inherit}button{cursor:pointer;border:0} .app{max-width:620px;margin:auto;min-height:100vh;padding:env(safe-area-inset-top) 16px calc(22px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 2px 16px}.brand{display:flex;gap:11px;align-items:center;font-weight:850;font-size:18px}.logo{width:42px;height:42px;border-radius:15px;background:linear-gradient(135deg,var(--purple),var(--pink));display:grid;place-items:center;color:#fff;font-size:22px;box-shadow:0 7px 18px #6047ee40}.menu{width:45px;height:45px;border-radius:16px;background:#fff;box-shadow:0 5px 20px #24264b0c;font-size:22px}
+h1{font-size:clamp(28px,7vw,38px);line-height:1.08;letter-spacing:-1.2px;margin:12px 0 8px} .sub{color:var(--muted);margin:0 0 20px;font-size:15px}
+.camera-card{background:#17172a;border-radius:28px;overflow:hidden;position:relative;box-shadow:0 18px 42px #25204c20;min-height:300px}
+video{display:block;width:100%;height:320px;object-fit:cover;transform:scaleX(1)} .camera-placeholder{height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:28px;background:linear-gradient(145deg,#252348,#121525)}.camera-placeholder .cam-icon{font-size:48px;margin-bottom:12px}.camera-placeholder p{color:#c5c5de;margin:8px 0 0;font-size:14px;max-width:260px}
+.scan-frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}.frame{width:min(72%,300px);height:130px;border:3px solid #fff;border-radius:20px;box-shadow:0 0 0 999px #08081b30;position:relative}.frame:before,.frame:after{content:"";position:absolute;left:12%;right:12%;height:3px;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}.frame:before{top:35%}.frame:after{top:68%}
+.camera-tag{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#ffffffdf;color:#25233e;border-radius:100px;padding:8px 14px;font-size:12px;font-weight:750;white-space:nowrap}
+.actions{display:flex;gap:10px;margin:14px 0}.btn{border-radius:16px;padding:14px 16px;font-weight:800;transition:transform .12s}.btn:active{transform:scale(.98)}.primary{background:linear-gradient(100deg,var(--purple),#8c50e9);color:#fff;box-shadow:0 8px 18px #6047ee30;flex:1}.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}.full{width:100%}
+.status{text-align:center;color:var(--muted);font-size:13px;min-height:22px;margin:2px 0 10px}
+.result{display:none;background:#fff;border:1px solid var(--line);border-radius:25px;padding:22px;margin-top:16px;box-shadow:0 12px 30px #28264b0b}.result.show{display:block;animation:pop .2s ease}@keyframes pop{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}.result-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.pill{font-size:12px;font-weight:800;border-radius:99px;padding:7px 10px;background:#e5fbf4;color:#087e59}.price{font-size:clamp(44px,12vw,64px);font-weight:900;letter-spacing:-2px;line-height:1.1;margin:15px 0 4px}.price small{font-size:22px;letter-spacing:0}.loyalty{display:none;background:#fff0f7;color:#bd236e;border-radius:15px;padding:12px 14px;margin-top:12px;font-weight:750}.old-price{color:#898ba1;text-decoration:line-through;font-size:18px}.not-found{color:#a12e55;font-weight:750}
+.admin{display:none;margin-top:20px;background:#fff;border-radius:25px;padding:20px;border:1px solid var(--line);box-shadow:0 12px 30px #28264b0b}.admin.show{display:block}.admin h2{margin:0 0 6px;font-size:23px}.hint{color:var(--muted);font-size:13px;margin:0 0 18px}.field{display:flex;flex-direction:column;gap:7px;margin:13px 0}.field label{font-size:13px;font-weight:800;color:#555873}.field input,.field select{width:100%;border:1px solid #dedfee;border-radius:13px;padding:13px;background:#fbfbff;color:var(--ink);outline-color:var(--purple)}.checkrow{display:flex;align-items:center;gap:10px;padding:12px 0;font-size:14px;font-weight:700}.checkrow input{width:19px;height:19px;accent-color:var(--purple)}.admin-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.admin-buttons .btn{flex:1;min-width:125px}.divider{height:1px;background:var(--line);margin:20px 0}.product-list{display:flex;flex-direction:column;gap:8px}.product-item{background:#f7f7fc;border-radius:14px;padding:12px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13px}.product-item strong{display:block;font-size:14px}.tiny{font-size:12px;color:var(--muted)}.danger{color:#b4234b;background:#fff0f3}.modal{position:fixed;inset:0;background:#14142bc9;display:none;align-items:center;justify-content:center;padding:22px;z-index:10}.modal.show{display:flex}.modal-box{background:#fff;border-radius:24px;padding:23px;width:100%;max-width:360px}.modal-box h2{margin:0 0 7px}.modal-box p{color:var(--muted);font-size:14px}.modal-box input{width:100%;padding:15px;border:1px solid var(--line);border-radius:13px;margin:8px 0 14px;text-align:center;font-size:24px;letter-spacing:8px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#22213b;color:#fff;padding:12px 17px;border-radius:13px;box-shadow:0 8px 25px #0002;display:none;z-index:20;max-width:90%;text-align:center;font-size:14px}.toast.show{display:block}
+footer{text-align:center;color:#a1a2b5;font-size:11px;padding:22px 4px 4px}
+@media(min-width:560px){.app{padding-left:24px;padding-right:24px}.camera-card video,.camera-placeholder{height:360px}}
+</style>
 </head>
-<body class="bg-slate-100 text-slate-800 h-screen overflow-hidden flex flex-col">
-
-    <!-- МОБИЛЬНЫЙ ИНТЕРФЕЙС (Открывается при сканировании QR на телефоне) -->
-    <div id="mobile-view" class="hidden fixed inset-0 bg-emerald-600 text-white z-50 flex flex-col justify-between p-6">
-        <div class="text-center mt-6">
-            <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
-                <i class="fa-solid fa-building-columns text-4xl text-white"></i>
-            </div>
-            <h1 class="text-2xl font-bold">Оплата через СБП</h1>
-            <p class="text-emerald-100 mt-1">Симулятор Мобильного Банка</p>
-        </div>
-
-        <div class="bg-white text-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-            <div class="flex justify-between items-center pb-4 border-b border-slate-100">
-                <span class="text-slate-500 font-medium">Получатель</span>
-                <span class="font-bold text-slate-800">Магазин «Экспресс»</span>
-            </div>
-            <div class="flex justify-between items-center pb-4 border-b border-slate-100">
-                <span class="text-slate-500 font-medium">Номер заказа</span>
-                <span class="font-mono text-slate-600" id="m-order-id">#0000</span>
-            </div>
-            <div class="flex justify-between items-center pt-2">
-                <span class="text-slate-500 font-medium">Сумма к оплате</span>
-                <span class="text-3xl font-black text-emerald-600"><span id="m-amount">0</span> ₽</span>
-            </div>
-        </div>
-
-        <div class="space-y-3 mb-6">
-            <button id="m-pay-btn" onclick="submitMobilePayment()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all">
-                <i class="fa-solid fa-arrow-right-to-bracket text-emerald-400"></i>
-                Оплатить перевод
-            </button>
-            <div id="m-status" class="text-center text-sm text-emerald-100 min-h-[20px]"></div>
-        </div>
-    </div>
-
-    <!-- ОСНОВНОЙ ИНТЕРФЕЙС КАССЫ (Для ПК / Планшета) -->
-    <div id="pos-view" class="flex-1 flex flex-col h-full">
-        <!-- Шапка -->
-        <header class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm">
-            <div class="flex items-center gap-3">
-                <div class="bg-emerald-500 text-white p-2.5 rounded-xl shadow-md shadow-emerald-200">
-                    <i class="fa-solid fa-cart-shopping text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-xl leading-tight">Касса Самообслуживания</h1>
-                    <p class="text-xs text-slate-500 font-medium">Экспресс-Оплата</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3">
-                <button onclick="openAdminModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl flex items-center gap-2 transition-all">
-                    <i class="fa-solid fa-user-gear"></i>
-                    Админ-панель
-                </button>
-            </div>
-        </header>
-
-        <!-- Главное содержимое -->
-        <main class="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
-            <!-- Левая колонка: Список товаров в чеке -->
-            <section class="col-span-7 bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-                <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                    <h2 class="font-bold text-slate-700 flex items-center gap-2">
-                        <i class="fa-solid fa-receipt text-slate-400"></i>
-                        Товары в чеке
-                    </h2>
-                    <span id="cart-count-badge" class="bg-slate-200 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-full">0 шт</span>
-                </div>
-
-                <!-- Список товаров -->
-                <div id="cart-list" class="flex-1 overflow-y-auto p-4 space-y-3">
-                    <!-- Заполняется JS -->
-                </div>
-
-                <!-- Итоговая панель -->
-                <div class="p-6 bg-slate-50 border-t border-slate-200 space-y-3">
-                    <div class="flex justify-between text-slate-500 text-sm">
-                        <span>Скидка по купону:</span>
-                        <span id="discount-amount" class="font-semibold text-emerald-600">-0 ₽</span>
-                    </div>
-                    <div class="flex justify-between items-baseline pt-1">
-                        <span class="text-lg font-bold text-slate-700">Итого к оплате:</span>
-                        <span id="total-amount" class="text-4xl font-black text-slate-900">0 ₽</span>
-                    </div>
-                    <button onclick="startCheckout()" id="checkout-btn" disabled class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 text-white font-bold py-4 rounded-2xl text-xl shadow-lg shadow-emerald-200 disabled:shadow-none transition-all flex items-center justify-center gap-3">
-                        Оплатить
-                        <i class="fa-solid fa-chevron-right text-sm"></i>
-                    </button>
-                </div>
-            </section>
-
-            <!-- Правая колонка: Каталог товаров и Сканер -->
-            <section class="col-span-5 flex flex-col gap-6 overflow-hidden">
-                <!-- Панель сканирования / Быстрого ввода -->
-                <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 space-y-3">
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Отсканируйте или введите штрихкод</label>
-                    <form onsubmit="handleBarcodeSubmit(event)" class="flex gap-2">
-                        <input type="text" id="barcode-input" placeholder="Введите штрихкод..." class="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <button type="submit" class="bg-slate-900 text-white px-5 rounded-xl font-bold hover:bg-slate-800 transition-all">
-                            <i class="fa-solid fa-plus"></i>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Быстрый выбор товаров из каталога -->
-                <div class="flex-1 bg-white rounded-3xl shadow-sm border border-slate-200 p-4 flex flex-col overflow-hidden">
-                    <h3 class="font-bold text-slate-700 mb-3 px-2">Каталог товаров</h3>
-                    <div id="catalog-grid" class="flex-1 overflow-y-auto grid grid-cols-2 gap-3 p-1">
-                        <!-- Заполняется JS -->
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО 1: Выбор пакетов -->
-    <div id="modal-bag" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-6 animate-in fade-in zoom-in duration-200">
-            <div class="text-center space-y-2">
-                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-2xl">
-                    <i class="fa-solid fa-bag-shopping"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-slate-800">Нужен ли вам пакет?</h3>
-                <p class="text-slate-500 text-sm">Выберите подходящий размер или продолжите без пакета</p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="addBagAndContinue('bag-small')" class="p-4 border-2 border-slate-200 hover:border-emerald-500 rounded-2xl flex flex-col items-center gap-2 hover:bg-emerald-50 transition-all group">
-                    <i class="fa-solid fa-shopping-bag text-3xl text-slate-400 group-hover:text-emerald-500"></i>
-                    <span class="font-bold text-slate-700">Маленький пакет</span>
-                    <span class="text-sm font-semibold text-emerald-600">5 ₽</span>
-                </button>
-                <button onclick="addBagAndContinue('bag-large')" class="p-4 border-2 border-slate-200 hover:border-emerald-500 rounded-2xl flex flex-col items-center gap-2 hover:bg-emerald-50 transition-all group">
-                    <i class="fa-solid fa-box-archive text-3xl text-slate-400 group-hover:text-emerald-500"></i>
-                    <span class="font-bold text-slate-700">Большой пакет</span>
-                    <span class="text-sm font-semibold text-emerald-600">10 ₽</span>
-                </button>
-            </div>
-
-            <button onclick="addBagAndContinue(null)" class="w-full py-4 border border-slate-200 rounded-2xl font-bold text-slate-600 hover:bg-slate-100 transition-all">
-                Пакет не нужен
-            </button>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО 2: Выбор способа оплаты -->
-    <div id="modal-payment-method" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-6">
-            <div class="text-center space-y-2">
-                <h3 class="text-2xl font-bold text-slate-800">Выберите способ оплаты</h3>
-                <p class="text-slate-500 text-sm">К оплате: <span id="pay-method-total" class="font-bold text-slate-800">0 ₽</span></p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="selectPaymentMethod('sbp')" class="p-6 border-2 border-slate-200 hover:border-emerald-500 rounded-2xl flex flex-col items-center gap-3 hover:bg-emerald-50 transition-all group text-center">
-                    <i class="fa-solid fa-qrcode text-4xl text-slate-400 group-hover:text-emerald-500"></i>
-                    <div>
-                        <div class="font-bold text-slate-800">СБП / QR-код</div>
-                        <div class="text-xs text-slate-400">Оплата телефоном</div>
-                    </div>
-                </button>
-
-                <button onclick="selectPaymentMethod('card')" class="p-6 border-2 border-slate-200 hover:border-indigo-500 rounded-2xl flex flex-col items-center gap-3 hover:bg-indigo-50 transition-all group text-center">
-                    <i class="fa-solid fa-credit-card text-4xl text-slate-400 group-hover:text-indigo-500"></i>
-                    <div>
-                        <div class="font-bold text-slate-800">Банковская карта</div>
-                        <div class="text-xs text-slate-400">Через терминал</div>
-                    </div>
-                </button>
-            </div>
-
-            <button onclick="closeModal('modal-payment-method')" class="w-full py-3 text-slate-400 font-semibold hover:text-slate-600">
-                Вернуться к чеку
-            </button>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО 3: Оплата по QR-коду (СБП) -->
-    <div id="modal-qr" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 text-center">
-            <h3 class="text-2xl font-bold text-slate-800">Отсканируйте QR-код</h3>
-            <p class="text-slate-500 text-sm">Наведите камеру телефона для оплаты через СБП</p>
-
-            <div class="bg-slate-50 p-4 rounded-2xl inline-block border border-slate-200 shadow-inner">
-                <div id="qrcode" class="flex justify-center"></div>
-            </div>
-
-            <div class="text-2xl font-black text-emerald-600" id="qr-total-amount">0 ₽</div>
-
-            <div class="flex items-center justify-center gap-2 text-slate-400 text-sm animate-pulse">
-                <i class="fa-solid fa-spinner fa-spin"></i>
-                Ожидание сканирования и оплаты...
-            </div>
-
-            <button onclick="closeModal('modal-qr')" class="w-full py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-100">
-                Отмена
-            </button>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО 4: Вызов сотрудника для оплаты картой -->
-    <div id="modal-staff-call" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md z-40 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 text-center animate-pulse-fast border-4 border-amber-400">
-            <div class="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-3xl">
-                <i class="fa-solid fa-user-shield"></i>
-            </div>
-            <div>
-                <h3 class="text-2xl font-bold text-slate-800">Вызываем сотрудника...</h3>
-                <p class="text-slate-500 text-sm mt-1">Ожидайте, сотрудник активирует терминал оплаты</p>
-            </div>
-
-            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800 font-medium">
-                Сотрудник должен отсканировать свой штрихкод (По умолчанию: <code class="font-bold">9999</code>)
-            </div>
-
-            <button onclick="cancelStaffCall()" class="w-full py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-100">
-                Отменить вызов
-            </button>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО 5: Симуляция банковского терминала (после сканирования карты сотрудником) -->
-    <div id="modal-card-terminal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-        <div class="bg-slate-900 text-white rounded-3xl p-8 max-w-sm w-full shadow-2xl space-y-6 text-center border border-slate-700">
-            <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-800 pb-3">
-                <span>ТЕРМИНАЛ #042</span>
-                <span class="text-emerald-400">ГОТОВ</span>
-            </div>
-
-            <div class="space-y-1">
-                <div class="text-slate-400 text-sm">Сумма к оплате:</div>
-                <div class="text-3xl font-black text-white" id="terminal-amount">0 ₽</div>
-            </div>
-
-            <div class="py-8 border-y border-slate-800 space-y-3">
-                <i class="fa-solid fa-wifi text-4xl text-indigo-400 animate-pulse"></i>
-                <p class="text-sm text-slate-300">Приложите карту или телефон к терминалу</p>
-            </div>
-
-            <button onclick="confirmCardPayment()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/30">
-                [Сэмулировать прикосновение карты]
-            </button>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО 6: Подтверждение покупки сотрудником -->
-    <div id="modal-staff-confirm" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 text-center">
-            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-2xl">
-                <i class="fa-solid fa-circle-check"></i>
-            </div>
-            <div>
-                <h3 class="text-2xl font-bold text-slate-800">Оплата прошла успешно!</h3>
-                <p class="text-slate-500 text-sm mt-1">Требуется сканирование штрихкода сотрудника для завершения операции</p>
-            </div>
-
-            <button onclick="staffFinalizeOrder()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all">
-                Подтвердить выдачу чека (код 9999)
-            </button>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО 7: Успешное завершение чека -->
-    <div id="modal-success" class="hidden fixed inset-0 bg-emerald-600 text-white z-50 flex items-center justify-center p-4">
-        <div class="text-center space-y-6 max-w-md w-full animate-in zoom-in duration-300">
-            <div class="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto text-5xl backdrop-blur-md">
-                <i class="fa-solid fa-check"></i>
-            </div>
-            <div>
-                <h2 class="text-3xl font-black">Спасибо за покупку!</h2>
-                <p class="text-emerald-100 mt-2">Возьмите ваш чек и товары</p>
-            </div>
-            <button onclick="resetPOS()" class="w-full bg-white text-emerald-700 font-bold py-4 rounded-2xl text-lg shadow-xl hover:bg-emerald-50 transition-all">
-                Завершить
-            </button>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНОЕ ОКНО: АДМИН-ПАНЕЛЬ -->
-    <div id="modal-admin" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <!-- Шапка Админки -->
-            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-sliders text-emerald-400"></i>
-                    <h3 class="font-bold text-lg">Административная панель</h3>
-                </div>
-                <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
-            </div>
-
-            <!-- Вкладки Админки -->
-            <div class="flex border-b border-slate-200 bg-slate-50 px-6 gap-4">
-                <button onclick="switchAdminTab('products')" id="tab-btn-products" class="py-3 font-bold border-b-2 border-emerald-500 text-emerald-600">Товары</button>
-                <button onclick="switchAdminTab('coupons')" id="tab-btn-coupons" class="py-3 font-bold text-slate-500 hover:text-slate-800">Купоны</button>
-                <button onclick="switchAdminTab('staff')" id="tab-btn-staff" class="py-3 font-bold text-slate-500 hover:text-slate-800">Сотрудники</button>
-            </div>
-
-            <!-- Содержимое Админки -->
-            <div class="flex-1 overflow-y-auto p-6 space-y-6">
-                <!-- Вкладка 1: Товары -->
-                <div id="admin-tab-products" class="space-y-6">
-                    <form onsubmit="saveProduct(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-4">
-                        <h4 class="font-bold text-slate-700 text-sm">Добавить / Редактировать товар</h4>
-                        <div class="grid grid-cols-3 gap-3">
-                            <input type="text" id="adm-p-title" placeholder="Название" required class="bg-white border rounded-xl px-3 py-2 text-sm">
-                            <input type="number" id="adm-p-price" placeholder="Цена (₽)" required class="bg-white border rounded-xl px-3 py-2 text-sm">
-                            <input type="text" id="adm-p-barcode" placeholder="Штрихкод" required class="bg-white border rounded-xl px-3 py-2 text-sm font-mono">
-                        </div>
-                        <button type="submit" class="w-full bg-emerald-500 text-white font-bold py-2 rounded-xl text-sm hover:bg-emerald-600">Сохранить товар</button>
-                    </form>
-
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-100 text-slate-500 font-bold">
-                            <tr>
-                                <th class="p-3">Штрихкод</th>
-                                <th class="p-3">Название</th>
-                                <th class="p-3">Цена</th>
-                                <th class="p-3 text-right">Действие</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-products-table" class="divide-y border-t">
-                            <!-- Заполняется JS -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Вкладка 2: Купоны -->
-                <div id="admin-tab-coupons" class="hidden space-y-6">
-                    <form onsubmit="saveCoupon(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-4">
-                        <h4 class="font-bold text-slate-700 text-sm">Добавить промокод</h4>
-                        <div class="grid grid-cols-2 gap-3">
-                            <input type="text" id="adm-c-code" placeholder="Промокод (напр. SALE10)" required class="bg-white border rounded-xl px-3 py-2 text-sm uppercase">
-                            <input type="number" id="adm-c-discount" placeholder="Скидка (%)" required class="bg-white border rounded-xl px-3 py-2 text-sm">
-                        </div>
-                        <button type="submit" class="w-full bg-emerald-500 text-white font-bold py-2 rounded-xl text-sm hover:bg-emerald-600">Создать купон</button>
-                    </form>
-
-                    <div id="admin-coupons-list" class="space-y-2">
-                        <!-- Заполняется JS -->
-                    </div>
-                </div>
-
-                <!-- Вкладка 3: Сотрудники -->
-                <div id="admin-tab-staff" class="hidden space-y-6">
-                    <div id="admin-staff-list" class="space-y-2">
-                        <!-- Заполняется JS -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Скрипт Логики -->
-    <script>
-        // --- ДАННЫЕ ПО УМОЛЧАНИЮ ---
-        let state = {
-            products: [
-                { barcode: '1001', name: 'Хлеб Белый', price: 45, icon: 'fa-bread-slice' },
-                { barcode: '1002', name: 'Молоко 3.2%', price: 89, icon: 'fa-bottle-droplet' },
-                { barcode: '1003', name: 'Яблоки Гала (1кг)', price: 120, icon: 'fa-apple-whole' },
-                { barcode: '1004', name: 'Шоколад Аленка', price: 95, icon: 'fa-cookie' },
-                { barcode: 'bag-small', name: 'Пакет Маленький', price: 5, icon: 'fa-shopping-bag' },
-                { barcode: 'bag-large', name: 'Пакет Большой', price: 10, icon: 'fa-box-archive' }
-            ],
-            coupons: [
-                { code: 'SALE10', percent: 10 },
-                { code: 'VIP20', percent: 20 }
-            ],
-            staff: [
-                { barcode: '9999', name: 'Старший Кассир' }
-            ],
-            cart: [],
-            appliedCoupon: null,
-            currentOrder: null,
-            mqttClient: null,
-            speechSynth: window.speechSynthesis,
-            staffCallInterval: null
-        };
-
-        // --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ---
-        window.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            // Если ссылка открыта на телефоне через QR-код
-            if (urlParams.get('mode') === 'mobile') {
-                initMobileMode(urlParams.get('order'), urlParams.get('amount'));
-            } else {
-                initPOSMode();
-            }
-        });
-
-        // --- МОБИЛЬНЫЙ РЕЖИМ (НА ТЕЛЕФОНЕ) ---
-        function initMobileMode(orderId, amount) {
-            document.getElementById('pos-view').classList.add('hidden');
-            document.getElementById('mobile-view').classList.remove('hidden');
-
-            document.getElementById('m-order-id').innerText = '#' + (orderId || '0000');
-            document.getElementById('m-amount').innerText = amount || '0';
-
-            state.currentOrder = { orderId, amount };
-            initMQTT('mobile-' + Math.random().toString(16).substr(2, 8));
-        }
-
-        function submitMobilePayment() {
-            const btn = document.getElementById('m-pay-btn');
-            const status = document.getElementById('m-status');
-            
-            btn.disabled = true;
-            btn.classList.add('opacity-50');
-            status.innerText = 'Отправка подтверждения на кассу...';
-
-            const payload = JSON.stringify({
-                type: 'PAYMENT_SUCCESS',
-                orderId: state.currentOrder.orderId
-            });
-
-            const message = new Paho.MQTT.Message(payload);
-            message.destinationName = 'kassa_toy_demo/' + state.currentOrder.orderId;
-            
-            if (state.mqttClient && state.mqttClient.isConnected()) {
-                state.mqttClient.send(message);
-            }
-
-            // Дублирующий канал локальной связи
-            if (window.BroadcastChannel) {
-                const bc = new BroadcastChannel('pos_channel');
-                bc.postMessage({ type: 'PAYMENT_SUCCESS', orderId: state.currentOrder.orderId });
-            }
-
-            status.innerText = 'Оплата успешно завершена!';
-            btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Оплачено';
-        }
-
-        // --- РЕЖИМ КАССЫ (НА ПК) ---
-        function initPOSMode() {
-            renderCatalog();
-            renderCart();
-            setupLocalBroadcasting();
-        }
-
-        function renderCatalog() {
-            const grid = document.getElementById('catalog-grid');
-            grid.innerHTML = '';
-            
-            state.products.filter(p => !p.barcode.startsWith('bag-')).forEach(product => {
-                const card = document.createElement('button');
-                card.onclick = () => addToCart(product.barcode);
-                card.className = "bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 p-3 rounded-2xl flex flex-col justify-between items-start text-left transition-all group";
-                card.innerHTML = `
-                    <div class="flex justify-between w-full items-center mb-2">
-                        <i class="fa-solid ${product.icon || 'fa-box'} text-xl text-slate-400 group-hover:text-emerald-500"></i>
-                        <span class="font-mono text-xs text-slate-400">${product.barcode}</span>
-                    </div>
-                    <div>
-                        <div class="font-bold text-slate-800 text-sm leading-tight">${product.name}</div>
-                        <div class="text-emerald-600 font-bold mt-1">${product.price} ₽</div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        function addToCart(barcode) {
-            // Проверка на штрихкод сотрудника
-            const isStaff = state.staff.find(s => s.barcode === barcode);
-            if (isStaff) {
-                handleStaffBarcodeScanned(isStaff);
-                return;
-            }
-
-            const product = state.products.find(p => p.barcode === barcode);
-            if (!product) {
-                alert('Товар с таким штрихкодом не найден!');
-                return;
-            }
-
-            const existing = state.cart.find(item => item.product.barcode === barcode);
-            if (existing) {
-                existing.quantity++;
-            } else {
-                state.cart.push({ product, quantity: 1 });
-            }
-
-            playBeep();
-            renderCart();
-        }
-
-        function changeQuantity(barcode, delta) {
-            const item = state.cart.find(i => i.product.barcode === barcode);
-            if (!item) return;
-
-            item.quantity += delta;
-            if (item.quantity <= 0) {
-                state.cart = state.cart.filter(i => i.product.barcode !== barcode);
-            }
-            renderCart();
-        }
-
-        function renderCart() {
-            const list = document.getElementById('cart-list');
-            list.innerHTML = '';
-
-            let total = 0;
-            let count = 0;
-
-            state.cart.forEach(item => {
-                const itemTotal = item.product.price * item.quantity;
-                total += itemTotal;
-                count += item.quantity;
-
-                const row = document.createElement('div');
-                row.className = "bg-slate-50 p-3 rounded-2xl border border-slate-200 flex items-center justify-between";
-                row.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center border text-slate-500">
-                            <i class="fa-solid ${item.product.icon || 'fa-box'}"></i>
-                        </div>
-                        <div>
-                            <div class="font-bold text-slate-800 text-sm">${item.product.name}</div>
-                            <div class="text-xs text-slate-400">${item.product.price} ₽ / шт</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center bg-white border rounded-xl overflow-hidden">
-                            <button onclick="changeQuantity('${item.product.barcode}', -1)" class="px-2.5 py-1 hover:bg-slate-100 font-bold">-</button>
-                            <span class="px-3 text-sm font-bold">${item.quantity}</span>
-                            <button onclick="changeQuantity('${item.product.barcode}', 1)" class="px-2.5 py-1 hover:bg-slate-100 font-bold">+</button>
-                        </div>
-                        <div class="font-bold text-slate-800 text-sm min-w-[50px] text-right">${itemTotal} ₽</div>
-                    </div>
-                `;
-                list.appendChild(row);
-            });
-
-            document.getElementById('cart-count-badge').innerText = `${count} шт`;
-            document.getElementById('total-amount').innerText = `${total} ₽`;
-            document.getElementById('checkout-btn').disabled = state.cart.length === 0;
-        }
-
-        function handleBarcodeSubmit(e) {
-            e.preventDefault();
-            const input = document.getElementById('barcode-input');
-            const code = input.value.trim();
-            if (code) {
-                addToCart(code);
-                input.value = '';
-            }
-        }
-
-        // --- ЛОГИКА ОФОРМЛЕНИЯ ЗАКАЗА И ОПЛАТЫ ---
-        function startCheckout() {
-            openModal('modal-bag');
-        }
-
-        function addBagAndContinue(bagBarcode) {
-            closeModal('modal-bag');
-            if (bagBarcode) {
-                addToCart(bagBarcode);
-            }
-            
-            // Расчет итоговой суммы
-            let total = state.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-            document.getElementById('pay-method-total').innerText = `${total} ₽`;
-            
-            openModal('modal-payment-method');
-        }
-
-        function selectPaymentMethod(method) {
-            closeModal('modal-payment-method');
-
-            let total = state.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-
-            if (method === 'sbp') {
-                startQRCheckout(total);
-            } else if (method === 'card') {
-                startCardCheckout(total);
-            }
-        }
-
-        // --- ОПЛАТА ПО QR (СБП) ---
-        function startQRCheckout(total) {
-            const orderId = Math.floor(1000 + Math.random() * 9000).toString();
-            state.currentOrder = { orderId, amount: total };
-
-            document.getElementById('qr-total-amount').innerText = `${total} ₽`;
-
-            // Генерация URL для мобильного телефона
-            const currentUrl = window.location.href.split('?')[0];
-            const qrUrl = `${currentUrl}?mode=mobile&order=${orderId}&amount=${total}`;
-
-            // Генерация QR-кода
-            const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = '';
-            new QRCode(qrContainer, {
-                text: qrUrl,
-                width: 180,
-                height: 180
-            });
-
-            openModal('modal-qr');
-
-            // Подключение к MQTT для получения сигнала от телефона
-            initMQTT('pos-' + orderId, orderId);
-        }
-
-        // --- ОПЛАТА КАРТОЙ И ВЫЗОВ СОТРУДНИКА ---
-        function startCardCheckout(total) {
-            openModal('modal-staff-call');
-            startStaffCallAudioAndVoice();
-        }
-
-        function startStaffCallAudioAndVoice() {
-            speakText("Вызываем сотрудника...");
-            
-            state.staffCallInterval = setInterval(() => {
-                playBeep(800, 0.2);
-                speakText("Вызываем сотрудника...");
-            }, 3000);
-        }
-
-        function stopStaffCallAudioAndVoice() {
-            if (state.staffCallInterval) {
-                clearInterval(state.staffCallInterval);
-                state.staffCallInterval = null;
-            }
-            if (state.speechSynth) {
-                state.speechSynth.cancel();
-            }
-        }
-
-        function cancelStaffCall() {
-            stopStaffCallAudioAndVoice();
-            closeModal('modal-staff-call');
-            openModal('modal-payment-method');
-        }
-
-        function handleStaffBarcodeScanned(staffMember) {
-            // Если вызовали сотрудника при оплате картой
-            if (!document.getElementById('modal-staff-call').classList.contains('hidden')) {
-                stopStaffCallAudioAndVoice();
-                closeModal('modal-staff-call');
-                
-                let total = state.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-                document.getElementById('terminal-amount').innerText = `${total} ₽`;
-                openModal('modal-card-terminal');
-            }
-        }
-
-        function confirmCardPayment() {
-            closeModal('modal-card-terminal');
-            openModal('modal-staff-confirm');
-        }
-
-        function staffFinalizeOrder() {
-            closeModal('modal-staff-confirm');
-            completeOrder();
-        }
-
-        function completeOrder() {
-            closeModal('modal-qr');
-            playSuccessSound();
-            openModal('modal-success');
-        }
-
-        function resetPOS() {
-            closeModal('modal-success');
-            state.cart = [];
-            state.appliedCoupon = null;
-            state.currentOrder = null;
-            renderCart();
-        }
-
-        // --- MQTT СИНХРОНИЗАЦИЯ (ОПЛАТА С ТЕЛЕФОНА) ---
-        function initMQTT(clientId, orderIdToSubscribe = null) {
-            state.mqttClient = new Paho.MQTT.Client('broker.hivemq.com', 8000, clientId);
-
-            state.mqttClient.onMessageArrived = (message) => {
-                try {
-                    const data = JSON.parse(message.payloadString);
-                    if (data.type === 'PAYMENT_SUCCESS') {
-                        completeOrder();
-                    }
-                } catch (e) {
-                    console.error('MQTT Parsing error', e);
-                }
-            };
-
-            state.mqttClient.connect({
-                onSuccess: () => {
-                    if (orderIdToSubscribe) {
-                        state.mqttClient.subscribe('kassa_toy_demo/' + orderIdToSubscribe);
-                    }
-                },
-                useSSL: false
-            });
-        }
-
-        function setupLocalBroadcasting() {
-            if (window.BroadcastChannel) {
-                const bc = new BroadcastChannel('pos_channel');
-                bc.onmessage = (event) => {
-                    if (event.data && event.data.type === 'PAYMENT_SUCCESS') {
-                        completeOrder();
-                    }
-                };
-            }
-        }
-
-        // --- ЗВУК И ГОЛОС (Web Audio & Speech API) ---
-        function playBeep(freq = 1000, duration = 0.08) {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = freq;
-                gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + duration);
-            } catch(e) {}
-        }
-
-        function playSuccessSound() {
-            playBeep(600, 0.1);
-            setTimeout(() => playBeep(900, 0.2), 120);
-        }
-
-        function speakText(text) {
-            if (!state.speechSynth) return;
-            state.speechSynth.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'ru-RU';
-            state.speechSynth.speak(utterance);
-        }
-
-        // --- АДМИН-ПАНЕЛЬ ---
-        function openAdminModal() {
-            const pass = prompt('Введите PIN-код админ-панели:', '1234');
-            if (pass === '1234') {
-                renderAdminProducts();
-                renderAdminCoupons();
-                renderAdminStaff();
-                openModal('modal-admin');
-            } else if (pass !== null) {
-                alert('Неверный PIN-код!');
-            }
-        }
-
-        function closeAdminModal() {
-            closeModal('modal-admin');
-        }
-
-        function switchAdminTab(tab) {
-            ['products', 'coupons', 'staff'].forEach(t => {
-                document.getElementById(`admin-tab-${t}`).classList.add('hidden');
-                document.getElementById(`tab-btn-${t}`).className = "py-3 font-bold text-slate-500 hover:text-slate-800";
-            });
-
-            document.getElementById(`admin-tab-${tab}`).classList.remove('hidden');
-            document.getElementById(`tab-btn-${tab}`).className = "py-3 font-bold border-b-2 border-emerald-500 text-emerald-600";
-        }
-
-        function renderAdminProducts() {
-            const tbody = document.getElementById('admin-products-table');
-            tbody.innerHTML = '';
-            state.products.forEach(p => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="p-3 font-mono">${p.barcode}</td>
-                    <td class="p-3 font-bold">${p.name}</td>
-                    <td class="p-3">${p.price} ₽</td>
-                    <td class="p-3 text-right">
-                        <button onclick="deleteProduct('${p.barcode}')" class="text-rose-500 hover:text-rose-700 font-bold">Удалить</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function saveProduct(e) {
-            e.preventDefault();
-            const name = document.getElementById('adm-p-title').value.trim();
-            const price = parseFloat(document.getElementById('adm-p-price').value);
-            const barcode = document.getElementById('adm-p-barcode').value.trim();
-
-            if (name && price && barcode) {
-                state.products.push({ barcode, name, price, icon: 'fa-box' });
-                renderAdminProducts();
-                renderCatalog();
-                e.target.reset();
-            }
-        }
-
-        function deleteProduct(barcode) {
-            state.products = state.products.filter(p => p.barcode !== barcode);
-            renderAdminProducts();
-            renderCatalog();
-        }
-
-        function renderAdminCoupons() {
-            const list = document.getElementById('admin-coupons-list');
-            list.innerHTML = '';
-            state.coupons.forEach(c => {
-                const div = document.createElement('div');
-                div.className = "bg-slate-50 p-3 rounded-xl border flex justify-between items-center";
-                div.innerHTML = `
-                    <div><span class="font-bold text-emerald-600">${c.code}</span> — Скидка ${c.percent}%</div>
-                    <button onclick="deleteCoupon('${c.code}')" class="text-rose-500 font-bold text-sm">Удалить</button>
-                `;
-                list.appendChild(div);
-            });
-        }
-
-        function saveCoupon(e) {
-            e.preventDefault();
-            const code = document.getElementById('adm-c-code').value.trim().toUpperCase();
-            const percent = parseInt(document.getElementById('adm-c-discount').value);
-
-            if (code && percent) {
-                state.coupons.push({ code, percent });
-                renderAdminCoupons();
-                e.target.reset();
-            }
-        }
-
-        function deleteCoupon(code) {
-            state.coupons = state.coupons.filter(c => c.code !== code);
-            renderAdminCoupons();
-        }
-
-        function renderAdminStaff() {
-            const list = document.getElementById('admin-staff-list');
-            list.innerHTML = '';
-            state.staff.forEach(s => {
-                const div = document.createElement('div');
-                div.className = "bg-slate-50 p-3 rounded-xl border flex justify-between items-center";
-                div.innerHTML = `
-                    <div><span class="font-bold">${s.name}</span> (Штрихкод: <code class="font-mono bg-slate-200 px-2 py-0.5 rounded">${s.barcode}</code>)</div>
-                `;
-                list.appendChild(div);
-            });
-        }
-
-        // --- УТИЛИТЫ МОДАЛЬНЫХ ОКОН ---
-        function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-        }
-    </script>
+<body>
+<div class="app">
+<header><div class="brand"><div class="logo">₽</div><span>Проверка цены</span></div><button class="menu" id="menuButton" aria-label="Меню">☻</button></header>
+<main>
+<h1>Отсканируйте<br>штрихкод</h1>
+<p class="sub">Наведите камеру на штрихкод или QR-код товара</p>
+<section class="camera-card" aria-label="Камера сканера">
+  <video id="video" autoplay muted playsinline style="display:none"></video>
+  <div class="camera-placeholder" id="placeholder"><div class="cam-icon">▦</div><strong>Камера готова к запуску</strong><p>Нажмите «Включить камеру» и наведите штрихкод в рамку</p></div>
+  <div class="scan-frame"><div class="frame"></div></div>
+  <div class="camera-tag">ПОМЕСТИТЕ КОД В РАМКУ</div>
+</section>
+<div class="actions"><button class="btn primary" id="startButton">Включить камеру</button><button class="btn secondary" id="switchButton" title="Переключить камеру" aria-label="Переключить камеру">↻</button></div>
+<div class="status" id="status">Для сканирования разрешите доступ к камере</div>
+<section class="result" id="result">
+ <div class="result-top"><span class="pill" id="resultLabel">ТОВАР НАЙДЕН</span><span class="tiny" id="resultCode"></span></div>
+ <div class="price" id="mainPrice">49<small> ₽</small> <small>99 коп.</small></div>
+ <div id="regularPrice" class="old-price" style="display:none"></div>
+ <div class="loyalty" id="loyaltyPrice"></div>
+ <p id="resultMessage" class="tiny">Цена товара</p>
+</section>
+<section class="admin" id="admin">
+ <h2>Управление товарами</h2><p class="hint">Добавляйте товары и переносите базу на другие сканеры.</p>
+ <div class="field"><label for="barcodeInput">Штрихкод (отсканируйте или введите цифры)</label><input id="barcodeInput" inputmode="numeric" placeholder="Например, 4601234567890"></div>
+ <div class="actions"><button class="btn secondary full" id="scanProductButton">Сканировать код камерой</button></div>
+ <div class="field"><label for="nameInput">Название (не озвучивается)</label><input id="nameInput" placeholder="Например, Молоко 1 л"></div>
+ <div class="field"><label for="priceInput">Цена без карты, ₽</label><input id="priceInput" type="number" min="0" step="0.01" placeholder="49.99"></div>
+ <label class="checkrow"><input type="checkbox" id="hasLoyalty"> Есть скидка по карте лояльности</label>
+ <div id="loyaltyFields" style="display:none"><div class="field"><label for="loyaltyInput">Цена по карте, ₽</label><input id="loyaltyInput" type="number" min="0" step="0.01" placeholder="39.99"></div></div>
+ <div class="admin-buttons"><button class="btn primary" id="saveProduct">Добавить позицию</button><button class="btn secondary" id="clearForm">Очистить</button></div>
+ <div class="divider"></div>
+ <h2 style="font-size:18px">База товаров</h2><p class="hint" id="dbCount">Товаров: 0</p>
+ <div class="admin-buttons"><button class="btn secondary" id="exportButton">Скачать базу JSON</button><button class="btn secondary" id="importButton">Загрузить базу</button><input id="importFile" type="file" accept=".json,application/json" hidden></div>
+ <div class="admin-buttons"><button class="btn secondary" id="exportCsv">Скачать CSV</button><button class="btn danger" id="clearDatabase">Удалить всю базу</button></div>
+ <div class="divider"></div><div class="product-list" id="productList"></div>
+ <div class="admin-buttons"><button class="btn secondary full" id="closeAdmin">Закрыть меню</button></div>
+</section>
+</main>
+<footer>База сохраняется в этом браузере на этом устройстве. Экспортируйте JSON, чтобы перенести товары на другой сканер.</footer>
+</div>
+<div class="modal" id="passwordModal"><div class="modal-box"><h2>Вход администратора</h2><p>Введите пароль для управления товарами.</p><input id="passwordInput" type="password" inputmode="numeric" maxlength="12" placeholder="••••" aria-label="Пароль"><button class="btn primary full" id="passwordSubmit">Войти</button><button class="btn secondary full" id="passwordCancel" style="margin-top:8px">Отмена</button></div></div>
+<div class="toast" id="toast"></div>
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const DB_KEY='priceScannerProducts_v1';
+let products={}; let stream=null; let reader=null; let scanning=false; let scanMode='customer'; let lastCode=''; let returnTimer=null; let menuTaps=0; let menuTapTimer=null; let activeCamera='user'; let toastTimer=null;
+try { products=JSON.parse(localStorage.getItem(DB_KEY)||'{}'); if(!products||typeof products!=='object'||Array.isArray(products)) products={}; } catch(e){products={};}
+const money=n => Number(n).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const saveDB=()=>{try{localStorage.setItem(DB_KEY,JSON.stringify(products));}catch(e){notify('Не удалось сохранить базу. Освободите место в браузере.')}renderProducts();};
+function notify(message){const t=$('toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);}
+function speak(text){try{if(!('speechSynthesis'in window))return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='ru-RU';u.rate=0.92;window.speechSynthesis.speak(u);}catch(e){}}
+function stopCamera(){scanning=false;if(reader){try{reader.reset();}catch(e){} reader=null;}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}const v=$('video');v.srcObject=null;v.style.display='none';$('placeholder').style.display='flex';$('startButton').textContent='Включить камеру';}
+async function startCamera(mode='customer'){
+ scanMode=mode;
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){notify('Камера недоступна. Откройте страницу через HTTPS в поддерживаемом браузере.');return;}
+ stopCamera();$('status').textContent='Запрашиваем доступ к камере…';
+ try{
+  stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:activeCamera,width:{ideal:1280},height:{ideal:720}}});
+  const v=$('video');v.srcObject=stream;v.style.display='block';$('placeholder').style.display='none';await v.play();
+  scanning=true;$('startButton').textContent='Остановить камеру';$('status').textContent='Ищем штрихкод…';
+  if(typeof ZXing==='undefined'||!ZXing.BrowserMultiFormatReader){$('status').textContent='Не загрузился модуль сканирования. Проверьте интернет и обновите страницу.';return;}
+  reader=new ZXing.BrowserMultiFormatReader();
+  reader.decodeFromVideoElementContinuously(v,(result,err)=>{
+   if(!scanning||!result)return;
+   const code=result.getText();if(!code||code===lastCode)return;
+   lastCode=code;handleCode(code);
+  });
+ }catch(e){stopCamera();$('status').textContent='Не удалось включить камеру. Разрешите доступ в настройках браузера.';notify(e&&e.name==='NotAllowedError'?'Доступ к камере запрещён. Разрешите его в настройках браузера.':'Камера не запустилась. Проверьте разрешения и повторите.');}
+}
+function handleCode(code){
+ if(scanMode==='admin'){
+  $('barcodeInput').value=code;stopCamera();$('status').textContent='Штрихкод считан: '+code;notify('Штрихкод считан');return;
+ }
+ showProduct(code);
+}
+function showProduct(code){
+ clearTimeout(returnTimer);const p=products[String(code)];$('result').classList.add('show');$('resultCode').textContent=code;
+ if(!p){$('resultLabel').textContent='НЕ НАЙДЕН';$('resultLabel').style.background='#fff0f3';$('resultLabel').style.color='#b4234b';$('mainPrice').innerHTML='—';$('regularPrice').style.display='none';$('loyaltyPrice').style.display='none';$('resultMessage').innerHTML='<span class="not-found">Товар не найден в базе</span>';speak('Товар не найден');}
+ else{
+  $('resultLabel').textContent='ТОВАР НАЙДЕН';$('resultLabel').style.background='#e5fbf4';$('resultLabel').style.color='#087e59';$('resultMessage').textContent=p.name||'Цена товара';
+  if(p.hasLoyalty&&p.loyaltyPrice!==''&&p.loyaltyPrice!=null){
+   $('mainPrice').innerHTML=money(p.loyaltyPrice)+' <small>₽</small>'; $('regularPrice').style.display='block';$('regularPrice').textContent='Без карты: '+money(p.price)+' ₽';
+   $('loyaltyPrice').style.display='block';$('loyaltyPrice').textContent='По карте лояльности: '+money(p.loyaltyPrice)+' ₽';
+   speak('Акция. '+money(p.loyaltyPrice).replace(',',' рубль ')+' рублей по карте лояльности');
+  }else{
+   $('mainPrice').innerHTML=money(p.price)+' <small>₽</small>'; $('regularPrice').style.display='none';$('loyaltyPrice').style.display='none';speak(money(p.price).replace(',',' рубль ')+' рублей');
+  }
+ }
+ $('status').textContent='Следующее сканирование через 5 секунд';lastCode=String(code);
+ returnTimer=setTimeout(()=>{ $('result').classList.remove('show');$('status').textContent=scanning?'Ищем штрихкод…':'Нажмите «Включить камеру», чтобы начать';lastCode=''; },5000);
+}
+$('startButton').addEventListener('click',()=>{if(scanning){stopCamera();$('status').textContent='Камера остановлена';}else startCamera('customer');});
+$('switchButton').addEventListener('click',()=>{activeCamera=activeCamera==='user'?'environment':'user';if(scanning)startCamera(scanMode);else notify(activeCamera==='user'?'Выбрана фронтальная камера':'Выбрана задняя камера');});
+$('menuButton').addEventListener('click',()=>{menuTaps++;clearTimeout(menuTapTimer);menuTapTimer=setTimeout(()=>menuTaps=0,2500);if(menuTaps>=5){menuTaps=0;$('passwordModal').classList.add('show');$('passwordInput').value='';$('passwordInput').focus();}});
+function login(){if($('passwordInput').value==='8888'){$('passwordModal').classList.remove('show');$('admin').classList.add('show');renderProducts();$('admin').scrollIntoView({behavior:'smooth',block:'start'});}else{notify('Неверный пароль');$('passwordInput').value='';$('passwordInput').focus();}}
+$('passwordSubmit').addEventListener('click',login);$('passwordInput').addEventListener('keydown',e=>{if(e.key==='Enter')login();});$('passwordCancel').addEventListener('click',()=>$('passwordModal').classList.remove('show'));
+$('hasLoyalty').addEventListener('change',()=>{$('loyaltyFields').style.display=$('hasLoyalty').checked?'block':'none';});
+$('scanProductButton').addEventListener('click',()=>{if(!scanning)startCamera('admin');else{scanMode='admin';$('status').textContent='Наведите камеру на штрихкод товара';notify('Режим сканирования для добавления товара');}});
+$('saveProduct').addEventListener('click',()=>{
+ const code=$('barcodeInput').value.trim();const price=$('priceInput').value;const loyalty=$('loyaltyInput').value;
+ if(!code){notify('Сначала отсканируйте или введите штрихкод');return;}
+ if(price===''||!Number.isFinite(Number(price))||Number(price)<0){notify('Введите корректную цену без карты');return;}
+ if($('hasLoyalty').checked&&(loyalty===''||!Number.isFinite(Number(loyalty))||Number(loyalty)<0)){notify('Введите корректную цену по карте');return;}
+ products[code]={barcode:code,name:$('nameInput').value.trim(),price:Number(price),hasLoyalty:$('hasLoyalty').checked,loyaltyPrice:$('hasLoyalty').checked?Number(loyalty):null};
+ saveDB();notify('Товар сохранён');clearForm();
+});
+function clearForm(){$('barcodeInput').value='';$('nameInput').value='';$('priceInput').value='';$('loyaltyInput').value='';$('hasLoyalty').checked=false;$('loyaltyFields').style.display='none';}
+$('clearForm').addEventListener('click',clearForm);$('closeAdmin').addEventListener('click',()=>$('admin').classList.remove('show'));
+function renderProducts(){const keys=Object.keys(products);$('dbCount').textContent='Товаров: '+keys.length;$('productList').innerHTML='';keys.sort().forEach(code=>{const p=products[code];const row=document.createElement('div');row.className='product-item';const info=document.createElement('div');const strong=document.createElement('strong');strong.textContent=p.name||'Без названия';const small=document.createElement('span');small.className='tiny';small.textContent=code+' · '+money(p.price)+' ₽'+(p.hasLoyalty?' · карта '+money(p.loyaltyPrice)+' ₽':'');info.append(strong,small);const del=document.createElement('button');del.className='btn secondary';del.style.padding='8px 10px';del.textContent='Удалить';del.addEventListener('click',()=>{if(confirm('Удалить товар '+code+'?')){delete products[code];saveDB();}});row.append(info,del);$('productList').append(row);});if(!keys.length){const empty=document.createElement('p');empty.className='tiny';empty.textContent='Пока нет добавленных товаров.';$('productList').append(empty);}}
+$('exportButton').addEventListener('click',()=>download('baza-tovarov.json',JSON.stringify({format:'price-scanner-v1',products},null,2),'application/json;charset=utf-8'));
+$('exportCsv').addEventListener('click',()=>{const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const rows=[['Штрихкод','Название','Цена без карты','Скидка по карте','Цена по карте'],...Object.values(products).map(p=>[p.barcode,p.name,p.price,p.hasLoyalty?'Да':'Нет',p.loyaltyPrice??''])];download('baza-tovarov.csv','\uFEFF'+rows.map(r=>r.map(esc).join(';')).join('\r\n'),'text/csv;charset=utf-8');});
+function download(name,data,type){const blob=new Blob([data],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+$('importButton').addEventListener('click',()=>$('importFile').click());
+$('importFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());const incoming=data.products||data;if(!incoming||typeof incoming!=='object'||Array.isArray(incoming))throw new Error();if(!confirm('Заменить текущую базу '+Object.keys(products).length+' товаров импортируемой базой '+Object.keys(incoming).length+' товаров?'))return;products={};for(const [k,v] of Object.entries(incoming)){if(v&&v.price!==undefined)products[String(v.barcode||k)]={barcode:String(v.barcode||k),name:String(v.name||''),price:Number(v.price),hasLoyalty:!!v.hasLoyalty,loyaltyPrice:v.loyaltyPrice==null?null:Number(v.loyaltyPrice)};}saveDB();notify('База импортирована');}catch(err){notify('Не удалось прочитать файл базы JSON');}finally{e.target.value='';}});
+$('clearDatabase').addEventListener('click',()=>{if(confirm('Удалить ВСЕ товары из базы на этом устройстве? Это действие нельзя отменить.')){products={};saveDB();notify('База очищена');}});
+renderProducts();
+})();
+</script>
 </body>
 </html>
-
