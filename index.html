@@ -2,147 +2,135 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#5b45e8">
-<title>Проверка цены</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#07131f">
+<title>Валидатор • Городской транспорт</title>
 <style>
-:root{--bg:#f4f5fb;--ink:#20223a;--muted:#777b96;--purple:#6047ee;--pink:#ff4f9a;--cyan:#39c8df;--green:#16b981;--card:#fff;--line:#e6e7f1}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0,#eee6ff 0,transparent 34%),var(--bg);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
-button,input,select{font:inherit}button{cursor:pointer;border:0} .app{max-width:620px;margin:auto;min-height:100vh;padding:env(safe-area-inset-top) 16px calc(22px + env(safe-area-inset-bottom))}
-header{display:flex;align-items:center;justify-content:space-between;padding:20px 2px 16px}.brand{display:flex;gap:11px;align-items:center;font-weight:850;font-size:18px}.logo{width:42px;height:42px;border-radius:15px;background:linear-gradient(135deg,var(--purple),var(--pink));display:grid;place-items:center;color:#fff;font-size:22px;box-shadow:0 7px 18px #6047ee40}.menu{width:45px;height:45px;border-radius:16px;background:#fff;box-shadow:0 5px 20px #24264b0c;font-size:22px}
-h1{font-size:clamp(28px,7vw,38px);line-height:1.08;letter-spacing:-1.2px;margin:12px 0 8px} .sub{color:var(--muted);margin:0 0 20px;font-size:15px}
-.camera-card{background:#17172a;border-radius:28px;overflow:hidden;position:relative;box-shadow:0 18px 42px #25204c20;min-height:300px}
-video{display:block;width:100%;height:320px;object-fit:cover;transform:scaleX(1)} .camera-placeholder{height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:28px;background:linear-gradient(145deg,#252348,#121525)}.camera-placeholder .cam-icon{font-size:48px;margin-bottom:12px}.camera-placeholder p{color:#c5c5de;margin:8px 0 0;font-size:14px;max-width:260px}
-.scan-frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}.frame{width:min(72%,300px);height:130px;border:3px solid #fff;border-radius:20px;box-shadow:0 0 0 999px #08081b30;position:relative}.frame:before,.frame:after{content:"";position:absolute;left:12%;right:12%;height:3px;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}.frame:before{top:35%}.frame:after{top:68%}
-.camera-tag{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#ffffffdf;color:#25233e;border-radius:100px;padding:8px 14px;font-size:12px;font-weight:750;white-space:nowrap}
-.actions{display:flex;gap:10px;margin:14px 0}.btn{border-radius:16px;padding:14px 16px;font-weight:800;transition:transform .12s}.btn:active{transform:scale(.98)}.primary{background:linear-gradient(100deg,var(--purple),#8c50e9);color:#fff;box-shadow:0 8px 18px #6047ee30;flex:1}.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}.full{width:100%}
-.status{text-align:center;color:var(--muted);font-size:13px;min-height:22px;margin:2px 0 10px}
-.result{display:none;background:#fff;border:1px solid var(--line);border-radius:25px;padding:22px;margin-top:16px;box-shadow:0 12px 30px #28264b0b}.result.show{display:block;animation:pop .2s ease}@keyframes pop{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}.result-top{display:flex;justify-content:space-between;gap:10px;align-items:center}.pill{font-size:12px;font-weight:800;border-radius:99px;padding:7px 10px;background:#e5fbf4;color:#087e59}.price{font-size:clamp(44px,12vw,64px);font-weight:900;letter-spacing:-2px;line-height:1.1;margin:15px 0 4px}.price small{font-size:22px;letter-spacing:0}.loyalty{display:none;background:#fff0f7;color:#bd236e;border-radius:15px;padding:12px 14px;margin-top:12px;font-weight:750}.old-price{color:#898ba1;text-decoration:line-through;font-size:18px}.not-found{color:#a12e55;font-weight:750}
-.admin{display:none;margin-top:20px;background:#fff;border-radius:25px;padding:20px;border:1px solid var(--line);box-shadow:0 12px 30px #28264b0b}.admin.show{display:block}.admin h2{margin:0 0 6px;font-size:23px}.hint{color:var(--muted);font-size:13px;margin:0 0 18px}.field{display:flex;flex-direction:column;gap:7px;margin:13px 0}.field label{font-size:13px;font-weight:800;color:#555873}.field input,.field select{width:100%;border:1px solid #dedfee;border-radius:13px;padding:13px;background:#fbfbff;color:var(--ink);outline-color:var(--purple)}.checkrow{display:flex;align-items:center;gap:10px;padding:12px 0;font-size:14px;font-weight:700}.checkrow input{width:19px;height:19px;accent-color:var(--purple)}.admin-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.admin-buttons .btn{flex:1;min-width:125px}.divider{height:1px;background:var(--line);margin:20px 0}.product-list{display:flex;flex-direction:column;gap:8px}.product-item{background:#f7f7fc;border-radius:14px;padding:12px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13px}.product-item strong{display:block;font-size:14px}.tiny{font-size:12px;color:var(--muted)}.danger{color:#b4234b;background:#fff0f3}.modal{position:fixed;inset:0;background:#14142bc9;display:none;align-items:center;justify-content:center;padding:22px;z-index:10}.modal.show{display:flex}.modal-box{background:#fff;border-radius:24px;padding:23px;width:100%;max-width:360px}.modal-box h2{margin:0 0 7px}.modal-box p{color:var(--muted);font-size:14px}.modal-box input{width:100%;padding:15px;border:1px solid var(--line);border-radius:13px;margin:8px 0 14px;text-align:center;font-size:24px;letter-spacing:8px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#22213b;color:#fff;padding:12px 17px;border-radius:13px;box-shadow:0 8px 25px #0002;display:none;z-index:20;max-width:90%;text-align:center;font-size:14px}.toast.show{display:block}
-footer{text-align:center;color:#a1a2b5;font-size:11px;padding:22px 4px 4px}
-@media(min-width:560px){.app{padding-left:24px;padding-right:24px}.camera-card video,.camera-placeholder{height:360px}}
+:root{--bg:#07131f;--panel:#102333;--panel2:#142b3e;--cyan:#39d7e8;--green:#42e59b;--muted:#91a9b9;--red:#ff6d7d;--text:#f3f8fb}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#16374a 0%,var(--bg) 55%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
+.app{width:min(100%,520px);min-height:100vh;margin:auto;padding:18px 16px 28px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;justify-content:space-between;align-items:center}.brand{display:flex;gap:10px;align-items:center}.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--cyan),#1b8aa9);display:grid;place-items:center;color:#04202a;font-size:23px;font-weight:900}.eyebrow{font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}.brandname{font-weight:800;font-size:15px}.clock{text-align:right;color:var(--muted);font-size:12px}
+.status{border:1px solid #23465a;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:9px;color:#b9d2df;font-size:12px;background:#0b1d2b}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px #42e59b88}
+.fare{display:flex;justify-content:space-between;align-items:center;padding:15px 17px;background:linear-gradient(120deg,#12354a,#102333);border:1px solid #245168;border-radius:18px}.fare small{display:block;color:var(--muted);font-size:12px}.amount{font-size:29px;font-weight:850;letter-spacing:-1px}.currency{font-size:14px;color:#b5d6e2}
+.hero{flex:1;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 10px;background:linear-gradient(180deg,#0d2231aa,#0b1b29aa);border:1px solid #1e3b4c;border-radius:25px;position:relative;overflow:hidden}
+.hero:before{content:"";position:absolute;width:250px;height:250px;border-radius:50%;border:1px solid #39d7e815;box-shadow:0 0 0 25px #39d7e808,0 0 0 55px #39d7e805;top:32px}
+.nfc-icon{width:112px;height:112px;border-radius:30px;border:1px solid #3bd8e85c;background:linear-gradient(145deg,#153d50,#102738);display:grid;place-items:center;margin-bottom:22px;position:relative;box-shadow:0 0 36px #20bfd01b}
+.nfc-icon svg{width:65px;height:65px;stroke:var(--cyan);fill:none;stroke-width:2.5;stroke-linecap:round}
+h1{font-size:clamp(26px,7vw,34px);letter-spacing:1px;margin:0 0 8px;font-weight:900;position:relative}.sub{color:var(--muted);font-size:14px;line-height:1.45;max-width:290px;position:relative}
+.actions{display:grid;gap:10px}.btn{border:0;border-radius:15px;padding:16px 14px;font:inherit;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;min-height:54px}.primary{background:var(--cyan);color:#06202b}.secondary{background:#163246;color:#eaf8fc;border:1px solid #2c5065}.ghost{background:transparent;color:#a9c1cf;border:1px solid #284353}.btn:active{transform:scale(.99)}.tiny{font-size:11px;color:var(--muted);text-align:center;line-height:1.45}
+.footer{display:flex;justify-content:space-between;color:#698797;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:0 3px}
+.screen{display:none;flex-direction:column;gap:14px;min-height:65vh}.screen.active{display:flex}.screen h2{font-size:24px;margin:4px 0}.card{background:#102333;border:1px solid #234456;border-radius:18px;padding:16px}.field{display:flex;flex-direction:column;gap:7px;margin:10px 0}.field label{font-size:12px;color:var(--muted)}input,select{width:100%;padding:13px 12px;border-radius:11px;border:1px solid #345264;background:#071925;color:var(--text);font:inherit;outline:none}input:focus,select:focus{border-color:var(--cyan)}.row{display:flex;gap:9px}.row>*{flex:1;min-width:0}.back{align-self:flex-start;background:transparent;border:0;color:var(--cyan);font:inherit;font-weight:700;padding:8px 0;cursor:pointer}
+.success{display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;flex:1;gap:12px}.check{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:#123e36;border:2px solid var(--green);color:var(--green);font-size:48px}.success h2{font-size:28px}.success p{color:var(--muted);margin:0;line-height:1.5}
+.list{display:flex;flex-direction:column;gap:8px}.item{padding:12px;background:#0a1c29;border-radius:12px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13px}.muted{color:var(--muted)}.tag{font-size:10px;padding:4px 7px;border-radius:7px;background:#173a4a;color:#a9eaf0;white-space:nowrap}
+video{width:100%;border-radius:12px;background:#02080d;max-height:270px;object-fit:cover} .note{font-size:12px;color:#a6bfcd;line-height:1.5}.danger{color:var(--red)}.hidden{display:none!important}
+@media(min-height:850px){.hero{min-height:360px}.app{padding-top:24px}}
 </style>
 </head>
 <body>
 <div class="app">
-<header><div class="brand"><div class="logo">₽</div><span>Проверка цены</span></div><button class="menu" id="menuButton" aria-label="Меню">☻</button></header>
-<main>
-<h1>Отсканируйте<br>штрихкод</h1>
-<p class="sub">Наведите камеру на штрихкод или QR-код товара</p>
-<section class="camera-card" aria-label="Камера сканера">
-  <video id="video" autoplay muted playsinline style="display:none"></video>
-  <div class="camera-placeholder" id="placeholder"><div class="cam-icon">▦</div><strong>Камера готова к запуску</strong><p>Нажмите «Включить камеру» и наведите штрихкод в рамку</p></div>
-  <div class="scan-frame"><div class="frame"></div></div>
-  <div class="camera-tag">ПОМЕСТИТЕ КОД В РАМКУ</div>
-</section>
-<div class="actions"><button class="btn primary" id="startButton">Включить камеру</button><button class="btn secondary" id="switchButton" title="Переключить камеру" aria-label="Переключить камеру">↻</button></div>
-<div class="status" id="status">Для сканирования разрешите доступ к камере</div>
-<section class="result" id="result">
- <div class="result-top"><span class="pill" id="resultLabel">ТОВАР НАЙДЕН</span><span class="tiny" id="resultCode"></span></div>
- <div class="price" id="mainPrice">49<small> ₽</small> <small>99 коп.</small></div>
- <div id="regularPrice" class="old-price" style="display:none"></div>
- <div class="loyalty" id="loyaltyPrice"></div>
- <p id="resultMessage" class="tiny">Цена товара</p>
-</section>
-<section class="admin" id="admin">
- <h2>Управление товарами</h2><p class="hint">Добавляйте товары и переносите базу на другие сканеры.</p>
- <div class="field"><label for="barcodeInput">Штрихкод (отсканируйте или введите цифры)</label><input id="barcodeInput" inputmode="numeric" placeholder="Например, 4601234567890"></div>
- <div class="actions"><button class="btn secondary full" id="scanProductButton">Сканировать код камерой</button></div>
- <div class="field"><label for="nameInput">Название (не озвучивается)</label><input id="nameInput" placeholder="Например, Молоко 1 л"></div>
- <div class="field"><label for="priceInput">Цена без карты, ₽</label><input id="priceInput" type="number" min="0" step="0.01" placeholder="49.99"></div>
- <label class="checkrow"><input type="checkbox" id="hasLoyalty"> Есть скидка по карте лояльности</label>
- <div id="loyaltyFields" style="display:none"><div class="field"><label for="loyaltyInput">Цена по карте, ₽</label><input id="loyaltyInput" type="number" min="0" step="0.01" placeholder="39.99"></div></div>
- <div class="admin-buttons"><button class="btn primary" id="saveProduct">Добавить позицию</button><button class="btn secondary" id="clearForm">Очистить</button></div>
- <div class="divider"></div>
- <h2 style="font-size:18px">База товаров</h2><p class="hint" id="dbCount">Товаров: 0</p>
- <div class="admin-buttons"><button class="btn secondary" id="exportButton">Скачать базу JSON</button><button class="btn secondary" id="importButton">Загрузить базу</button><input id="importFile" type="file" accept=".json,application/json" hidden></div>
- <div class="admin-buttons"><button class="btn secondary" id="exportCsv">Скачать CSV</button><button class="btn danger" id="clearDatabase">Удалить всю базу</button></div>
- <div class="divider"></div><div class="product-list" id="productList"></div>
- <div class="admin-buttons"><button class="btn secondary full" id="closeAdmin">Закрыть меню</button></div>
-</section>
-</main>
-<footer>База сохраняется в этом браузере на этом устройстве. Экспортируйте JSON, чтобы перенести товары на другой сканер.</footer>
+  <header class="top">
+    <div class="brand"><div class="logo">↗</div><div><div class="eyebrow">Городской транспорт</div><div class="brandname">АВТОБУСНЫЙ ВАЛИДАТОР</div></div></div>
+    <div class="clock"><div id="clock">--:--</div><div id="date">--.--.----</div></div>
+  </header>
+
+  <main id="home" class="screen active">
+    <div class="status"><span class="dot"></span><span id="nfcStatus">Готов к считыванию</span></div>
+    <section class="fare"><div><small>СТОИМОСТЬ ПРОЕЗДА</small><div class="muted" style="font-size:12px;margin-top:4px">Одна поездка</div></div><div class="amount"><span id="fareDisplay">35</span> <span class="currency">₽</span></div></section>
+    <section class="hero">
+      <div class="nfc-icon">
+        <svg viewBox="0 0 80 80" aria-hidden="true"><path d="M27 25c-9 9-9 21 0 30"/><path d="M36 17c-14 14-14 32 0 46"/><path d="M45 9c-19 19-19 43 0 62"/><path d="M53 26c8 8 8 20 0 28"/><rect x="49" y="33" width="15" height="14" rx="3"/><path d="M54 40h5"/></svg>
+      </div>
+      <h1>ПРИЛОЖИТЕ КАРТУ</h1>
+      <p class="sub">Поднесите NFC-карту или метку для оплаты проезда</p>
+    </section>
+    <div class="actions">
+      <button class="btn primary" id="readNfcBtn">◉ &nbsp; ВКЛЮЧИТЬ СЧИТЫВАНИЕ NFC</button>
+      <button class="btn secondary" onclick="showSmile()">☺ &nbsp; ОПЛАТИТЬ УЛЫБКОЙ</button>
+    </div>
+    <p class="tiny">Приложите карту для оплаты проезда.</p>
+  </main>
+
+  <main id="admin" class="screen">
+    <button class="back" onclick="showScreen('home')">← На главный экран</button>
+    <h2>Панель администратора</h2>
+    <p class="muted" style="margin:0;font-size:13px">Настройки валидатора</p>
+    <section class="card">
+      <div class="field"><label>Стоимость одной поездки, ₽</label><input id="fareInput" type="number" min="0" step="1" value="35"></div>
+      <button class="btn primary" onclick="saveFare()">Сохранить стоимость</button>
+    </section>
+    <section class="card">
+      <h3 style="margin:0 0 6px">Оплата улыбкой</h3>
+      <p class="note">Можно сохранить карточку пассажира с фото. Для автоматического распознавания улыбки и проверки личности потребуется поддержка камеры и отдельного модуля распознавания в Android-приложении.</p>
+      <div class="field"><label>Имя пассажира</label><input id="personName" placeholder="Например, Алексей"></div>
+      <video id="video" autoplay playsinline class="hidden"></video>
+      <canvas id="canvas" class="hidden"></canvas>
+      <div class="row"><button class="btn secondary" onclick="startCamera()">Включить камеру</button><button class="btn secondary" onclick="captureFace()">Сохранить фото</button></div>
+      <div id="cameraMsg" class="note">Для камеры обычно требуется HTTPS и разрешение браузера.</div>
+      <div id="peopleList" class="list" style="margin-top:12px"></div>
+    </section>
+    <section class="card">
+      <h3 style="margin:0 0 10px">Операции</h3>
+      <div id="historyList" class="list"></div>
+      <button class="btn ghost" style="margin-top:12px" onclick="clearHistory()">Очистить историю</button>
+    </section>
+    <button class="btn ghost" onclick="showScreen('home')">Готово</button>
+  </main>
+
+  <main id="payment" class="screen">
+    <div class="success"><div class="check">✓</div><h2>ОПЛАТА ПРОШЛА</h2><p id="paymentDetail">Оплата принята</p><div class="amount"><span id="paidAmount">35</span> <span class="currency">₽</span></div><span class="tag">ОПЛАТА ПРОЕЗДА</span></div>
+    <button class="btn primary" onclick="printReceipt()">▤ &nbsp; РАСПЕЧАТАТЬ ЧЕК</button>
+    <button class="btn secondary" onclick="showScreen('home')">На главный экран</button>
+  </main>
+
+  <main id="smile" class="screen">
+    <button class="back" onclick="showScreen('home')">← Назад</button>
+    <h2>Оплата улыбкой ☺</h2>
+    <p class="note">Выберите зарегистрированного пассажира для оплаты улыбкой.</p>
+    <section class="card"><div class="field"><label>Зарегистрированный пассажир</label><select id="smilePerson"></select></div><button class="btn primary" onclick="payBySmile()">Подтвердить демооплату</button></section>
+    <div id="noPeople" class="note"></div>
+  </main>
+
+  <section class="footer"><span>Городской транспорт</span><span></span></section>
 </div>
-<div class="modal" id="passwordModal"><div class="modal-box"><h2>Вход администратора</h2><p>Введите пароль для управления товарами.</p><input id="passwordInput" type="password" inputmode="numeric" maxlength="12" placeholder="••••" aria-label="Пароль"><button class="btn primary full" id="passwordSubmit">Войти</button><button class="btn secondary full" id="passwordCancel" style="margin-top:8px">Отмена</button></div></div>
-<div class="toast" id="toast"></div>
-<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+
+<div id="receiptPrint" class="hidden"></div>
 <script>
-(() => {
-'use strict';
 const $ = id => document.getElementById(id);
-const DB_KEY='priceScannerProducts_v1';
-let products={}; let stream=null; let reader=null; let scanning=false; let scanMode='customer'; let lastCode=''; let returnTimer=null; let menuTaps=0; let menuTapTimer=null; let activeCamera='user'; let toastTimer=null;
-try { products=JSON.parse(localStorage.getItem(DB_KEY)||'{}'); if(!products||typeof products!=='object'||Array.isArray(products)) products={}; } catch(e){products={};}
-const money=n => Number(n).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
-const saveDB=()=>{try{localStorage.setItem(DB_KEY,JSON.stringify(products));}catch(e){notify('Не удалось сохранить базу. Освободите место в браузере.')}renderProducts();};
-function notify(message){const t=$('toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);}
-function speak(text){try{if(!('speechSynthesis'in window))return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='ru-RU';u.rate=0.92;window.speechSynthesis.speak(u);}catch(e){}}
-function stopCamera(){scanning=false;if(reader){try{reader.reset();}catch(e){} reader=null;}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}const v=$('video');v.srcObject=null;v.style.display='none';$('placeholder').style.display='flex';$('startButton').textContent='Включить камеру';}
-async function startCamera(mode='customer'){
- scanMode=mode;
- if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){notify('Камера недоступна. Откройте страницу через HTTPS в поддерживаемом браузере.');return;}
- stopCamera();$('status').textContent='Запрашиваем доступ к камере…';
- try{
-  stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:activeCamera,width:{ideal:1280},height:{ideal:720}}});
-  const v=$('video');v.srcObject=stream;v.style.display='block';$('placeholder').style.display='none';await v.play();
-  scanning=true;$('startButton').textContent='Остановить камеру';$('status').textContent='Ищем штрихкод…';
-  if(typeof ZXing==='undefined'||!ZXing.BrowserMultiFormatReader){$('status').textContent='Не загрузился модуль сканирования. Проверьте интернет и обновите страницу.';return;}
-  reader=new ZXing.BrowserMultiFormatReader();
-  reader.decodeFromVideoElementContinuously(v,(result,err)=>{
-   if(!scanning||!result)return;
-   const code=result.getText();if(!code||code===lastCode)return;
-   lastCode=code;handleCode(code);
-  });
- }catch(e){stopCamera();$('status').textContent='Не удалось включить камеру. Разрешите доступ в настройках браузера.';notify(e&&e.name==='NotAllowedError'?'Доступ к камере запрещён. Разрешите его в настройках браузера.':'Камера не запустилась. Проверьте разрешения и повторите.');}
+const STORAGE = {fare:'busdemo_fare',history:'busdemo_history',people:'busdemo_people'};
+let currentReceipt = null, stream = null, lastNfcText = '';
+function getJSON(key, fallback){try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch(e){return fallback}}
+function fare(){return Math.max(0, Number(localStorage.getItem(STORAGE.fare) ?? 35) || 0)}
+function history(){return getJSON(STORAGE.history,[])}
+function people(){return getJSON(STORAGE.people,[])}
+function money(n){return Number(n).toLocaleString('ru-RU')+' ₽'}
+function tick(){const d=new Date();$('clock').textContent=d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});$('date').textContent=d.toLocaleDateString('ru-RU')}
+setInterval(tick,1000);tick();
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');if(id==='admin')refreshAdmin();if(id==='smile')refreshSmile()}
+function refreshFare(){$('fareDisplay').textContent=fare();$('fareInput').value=fare()}
+function saveFare(){const n=Number($('fareInput').value);if(!Number.isFinite(n)||n<0){alert('Введите корректную сумму');return}localStorage.setItem(STORAGE.fare,String(n));refreshFare();alert('Стоимость сохранена')}
+function openAdmin(){showScreen('admin')}
+function payment(source,detail){const tx={id:Date.now(),time:new Date().toISOString(),amount:fare(),source,detail:detail||'Условная оплата'};const h=history();h.unshift(tx);localStorage.setItem(STORAGE.history,JSON.stringify(h.slice(0,100)));currentReceipt=tx;$('paymentDetail').textContent=detail||('Способ оплаты: '+source);$('paidAmount').textContent=money(tx.amount);showScreen('payment')}
+function demoTap(){payment('NFC-метка','Оплата принята')}
+async function readNfc(){
+ if(!('NDEFReader' in window)){ $('nfcStatus').textContent='Web NFC недоступен — используйте демо-кнопку или Android-обёртку'; alert('Этот браузер не предоставляет Web NFC. На Android нужен совместимый браузер и HTTPS либо NFC-мост в приложении-конвертере. Пока можно проверить интерфейс кнопкой «Демо».');return}
+ try{const reader=new NDEFReader();await reader.scan();$('nfcStatus').textContent='Поднесите NFC-метку…';reader.onreading=e=>{let text='';try{for(const r of e.message.records){if(r.recordType==='text'){const dec=new TextDecoder(r.encoding||'utf-8');text=dec.decode(r.data).trim();if(text)break}}}catch(err){}
+ // Служебная метка Admin открывает настройки; любая другая прочитанная NDEF-метка запускает демооплату.
+ if(text.toLowerCase()==='admin'){openAdmin();$('nfcStatus').textContent='Открыта панель администратора'}else{lastNfcText=text;payment('NFC',text?('Оплата по NFC · '+text.slice(0,45)):'Оплата по NFC-метке');$('nfcStatus').textContent='Метка считана'}}
+ reader.onreadingerror=()=>{$('nfcStatus').textContent='Не удалось прочитать метку. Попробуйте ещё раз.'}
+ }catch(err){$('nfcStatus').textContent='Не удалось запустить NFC';alert('Не получилось включить NFC: '+err.message)}
 }
-function handleCode(code){
- if(scanMode==='admin'){
-  $('barcodeInput').value=code;stopCamera();$('status').textContent='Штрихкод считан: '+code;notify('Штрихкод считан');return;
- }
- showProduct(code);
-}
-function showProduct(code){
- clearTimeout(returnTimer);const p=products[String(code)];$('result').classList.add('show');$('resultCode').textContent=code;
- if(!p){$('resultLabel').textContent='НЕ НАЙДЕН';$('resultLabel').style.background='#fff0f3';$('resultLabel').style.color='#b4234b';$('mainPrice').innerHTML='—';$('regularPrice').style.display='none';$('loyaltyPrice').style.display='none';$('resultMessage').innerHTML='<span class="not-found">Товар не найден в базе</span>';speak('Товар не найден');}
- else{
-  $('resultLabel').textContent='ТОВАР НАЙДЕН';$('resultLabel').style.background='#e5fbf4';$('resultLabel').style.color='#087e59';$('resultMessage').textContent=p.name||'Цена товара';
-  if(p.hasLoyalty&&p.loyaltyPrice!==''&&p.loyaltyPrice!=null){
-   $('mainPrice').innerHTML=money(p.loyaltyPrice)+' <small>₽</small>'; $('regularPrice').style.display='block';$('regularPrice').textContent='Без карты: '+money(p.price)+' ₽';
-   $('loyaltyPrice').style.display='block';$('loyaltyPrice').textContent='По карте лояльности: '+money(p.loyaltyPrice)+' ₽';
-   speak('Акция. '+money(p.loyaltyPrice).replace(',',' рубль ')+' рублей по карте лояльности');
-  }else{
-   $('mainPrice').innerHTML=money(p.price)+' <small>₽</small>'; $('regularPrice').style.display='none';$('loyaltyPrice').style.display='none';speak(money(p.price).replace(',',' рубль ')+' рублей');
-  }
- }
- $('status').textContent='Следующее сканирование через 5 секунд';lastCode=String(code);
- returnTimer=setTimeout(()=>{ $('result').classList.remove('show');$('status').textContent=scanning?'Ищем штрихкод…':'Нажмите «Включить камеру», чтобы начать';lastCode=''; },5000);
-}
-$('startButton').addEventListener('click',()=>{if(scanning){stopCamera();$('status').textContent='Камера остановлена';}else startCamera('customer');});
-$('switchButton').addEventListener('click',()=>{activeCamera=activeCamera==='user'?'environment':'user';if(scanning)startCamera(scanMode);else notify(activeCamera==='user'?'Выбрана фронтальная камера':'Выбрана задняя камера');});
-$('menuButton').addEventListener('click',()=>{menuTaps++;clearTimeout(menuTapTimer);menuTapTimer=setTimeout(()=>menuTaps=0,2500);if(menuTaps>=5){menuTaps=0;$('passwordModal').classList.add('show');$('passwordInput').value='';$('passwordInput').focus();}});
-function login(){if($('passwordInput').value==='8888'){$('passwordModal').classList.remove('show');$('admin').classList.add('show');renderProducts();$('admin').scrollIntoView({behavior:'smooth',block:'start'});}else{notify('Неверный пароль');$('passwordInput').value='';$('passwordInput').focus();}}
-$('passwordSubmit').addEventListener('click',login);$('passwordInput').addEventListener('keydown',e=>{if(e.key==='Enter')login();});$('passwordCancel').addEventListener('click',()=>$('passwordModal').classList.remove('show'));
-$('hasLoyalty').addEventListener('change',()=>{$('loyaltyFields').style.display=$('hasLoyalty').checked?'block':'none';});
-$('scanProductButton').addEventListener('click',()=>{if(!scanning)startCamera('admin');else{scanMode='admin';$('status').textContent='Наведите камеру на штрихкод товара';notify('Режим сканирования для добавления товара');}});
-$('saveProduct').addEventListener('click',()=>{
- const code=$('barcodeInput').value.trim();const price=$('priceInput').value;const loyalty=$('loyaltyInput').value;
- if(!code){notify('Сначала отсканируйте или введите штрихкод');return;}
- if(price===''||!Number.isFinite(Number(price))||Number(price)<0){notify('Введите корректную цену без карты');return;}
- if($('hasLoyalty').checked&&(loyalty===''||!Number.isFinite(Number(loyalty))||Number(loyalty)<0)){notify('Введите корректную цену по карте');return;}
- products[code]={barcode:code,name:$('nameInput').value.trim(),price:Number(price),hasLoyalty:$('hasLoyalty').checked,loyaltyPrice:$('hasLoyalty').checked?Number(loyalty):null};
- saveDB();notify('Товар сохранён');clearForm();
-});
-function clearForm(){$('barcodeInput').value='';$('nameInput').value='';$('priceInput').value='';$('loyaltyInput').value='';$('hasLoyalty').checked=false;$('loyaltyFields').style.display='none';}
-$('clearForm').addEventListener('click',clearForm);$('closeAdmin').addEventListener('click',()=>$('admin').classList.remove('show'));
-function renderProducts(){const keys=Object.keys(products);$('dbCount').textContent='Товаров: '+keys.length;$('productList').innerHTML='';keys.sort().forEach(code=>{const p=products[code];const row=document.createElement('div');row.className='product-item';const info=document.createElement('div');const strong=document.createElement('strong');strong.textContent=p.name||'Без названия';const small=document.createElement('span');small.className='tiny';small.textContent=code+' · '+money(p.price)+' ₽'+(p.hasLoyalty?' · карта '+money(p.loyaltyPrice)+' ₽':'');info.append(strong,small);const del=document.createElement('button');del.className='btn secondary';del.style.padding='8px 10px';del.textContent='Удалить';del.addEventListener('click',()=>{if(confirm('Удалить товар '+code+'?')){delete products[code];saveDB();}});row.append(info,del);$('productList').append(row);});if(!keys.length){const empty=document.createElement('p');empty.className='tiny';empty.textContent='Пока нет добавленных товаров.';$('productList').append(empty);}}
-$('exportButton').addEventListener('click',()=>download('baza-tovarov.json',JSON.stringify({format:'price-scanner-v1',products},null,2),'application/json;charset=utf-8'));
-$('exportCsv').addEventListener('click',()=>{const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const rows=[['Штрихкод','Название','Цена без карты','Скидка по карте','Цена по карте'],...Object.values(products).map(p=>[p.barcode,p.name,p.price,p.hasLoyalty?'Да':'Нет',p.loyaltyPrice??''])];download('baza-tovarov.csv','\uFEFF'+rows.map(r=>r.map(esc).join(';')).join('\r\n'),'text/csv;charset=utf-8');});
-function download(name,data,type){const blob=new Blob([data],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-$('importButton').addEventListener('click',()=>$('importFile').click());
-$('importFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());const incoming=data.products||data;if(!incoming||typeof incoming!=='object'||Array.isArray(incoming))throw new Error();if(!confirm('Заменить текущую базу '+Object.keys(products).length+' товаров импортируемой базой '+Object.keys(incoming).length+' товаров?'))return;products={};for(const [k,v] of Object.entries(incoming)){if(v&&v.price!==undefined)products[String(v.barcode||k)]={barcode:String(v.barcode||k),name:String(v.name||''),price:Number(v.price),hasLoyalty:!!v.hasLoyalty,loyaltyPrice:v.loyaltyPrice==null?null:Number(v.loyaltyPrice)};}saveDB();notify('База импортирована');}catch(err){notify('Не удалось прочитать файл базы JSON');}finally{e.target.value='';}});
-$('clearDatabase').addEventListener('click',()=>{if(confirm('Удалить ВСЕ товары из базы на этом устройстве? Это действие нельзя отменить.')){products={};saveDB();notify('База очищена');}});
-renderProducts();
-})();
+$('readNfcBtn').addEventListener('click',readNfc);
+function showSmile(){showScreen('smile')}
+function refreshSmile(){const sel=$('smilePerson');sel.innerHTML='';people().forEach((p,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=p.name;sel.appendChild(o)});$('noPeople').textContent=people().length?'Выберите пассажира и подтвердите учебную оплату.':'Пока нет пассажиров. Откройте админ-панель через демо-кнопку Admin ниже, чтобы добавить карточку.'}
+async function startCamera(){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});$('video').srcObject=stream;$('video').classList.remove('hidden');$('cameraMsg').textContent='Камера включена. Нажмите «Сохранить фото», чтобы сделать снимок для демо-карточки.'}catch(e){$('cameraMsg').textContent='Не удалось открыть камеру. Разрешите доступ к камере и используйте HTTPS.'}}
+function captureFace(){const name=$('personName').value.trim();if(!name){alert('Сначала введите имя пассажира');return}const v=$('video');let photo='';if(stream&&v.videoWidth){const c=$('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0,c.width,c.height);photo=c.toDataURL('image/jpeg',.65)}const p=people();p.push({name,photo,created:new Date().toISOString()});try{localStorage.setItem(STORAGE.people,JSON.stringify(p));$('personName').value='';$('cameraMsg').textContent='Пассажир зарегистрирован.';refreshAdmin()}catch(e){alert('Не удалось сохранить фото: возможно, закончилось место. Попробуйте ещё раз без фото.');}}
+function payBySmile(){const p=people();if(!p.length){alert('Сначала добавьте пассажира в админ-панели.');return}const person=p[Number($('smilePerson').value)];if(!person)return;payment('Улыбка','Оплата улыбкой · пассажир: '+person.name)}
+function refreshAdmin(){refreshFare();$('historyList').innerHTML='';const h=history();if(!h.length)$('historyList').innerHTML='<div class="muted">Операций пока нет</div>';h.slice(0,20).forEach(tx=>{const d=document.createElement('div');d.className='item';const left=document.createElement('div');left.innerHTML='<strong>'+escapeHTML(tx.source)+'</strong><div class="muted">'+new Date(tx.time).toLocaleString('ru-RU')+'</div>';const right=document.createElement('strong');right.textContent=money(tx.amount);d.append(left,right);$('historyList').appendChild(d)});$('peopleList').innerHTML='';people().forEach((p,i)=>{const d=document.createElement('div');d.className='item';const name=document.createElement('span');name.textContent=p.name;const del=document.createElement('button');del.className='btn ghost';del.style.padding='7px 10px';del.style.minHeight='36px';del.textContent='Удалить';del.onclick=()=>{const all=people();all.splice(i,1);localStorage.setItem(STORAGE.people,JSON.stringify(all));refreshAdmin()};d.append(name,del);$('peopleList').appendChild(d)});if(!people().length)$('peopleList').innerHTML='<div class="muted">Пассажиры не зарегистрированы</div>'}
+function clearHistory(){if(confirm('Удалить историю операций?')){localStorage.setItem(STORAGE.history,'[]');refreshAdmin()}}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function printReceipt(){if(!currentReceipt){alert('Нет данных чека');return}const tx=currentReceipt;const w=window.open('','_blank','width=420,height=650');if(!w){alert('Браузер заблокировал окно печати. Разрешите всплывающие окна и попробуйте ещё раз.');return}w.document.write(`<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Чек валидатора</title><style>body{font:14px monospace;padding:18px;color:#000}h2{text-align:center;font-size:18px}hr{border:0;border-top:1px dashed #000;margin:14px 0}.center{text-align:center}.line{display:flex;justify-content:space-between;gap:10px;margin:8px 0}@media print{button{display:none}}</style></head><body><h2>ГОРОДСКОЙ ТРАНСПОРТ</h2><div class="center">ЧЕК ОБ ОПЛАТЕ ПРОЕЗДА</div><hr><div class="line"><span>Дата</span><span>${new Date(tx.time).toLocaleDateString('ru-RU')}</span></div><div class="line"><span>Время</span><span>${new Date(tx.time).toLocaleTimeString('ru-RU')}</span></div><div class="line"><span>Операция</span><span>Оплата проезда</span></div><div class="line"><span>Способ</span><span>${escapeHTML(tx.source)}</span></div><hr><div class="line"><strong>Сумма</strong><strong>${money(tx.amount)}</strong></div><hr><p class="center"></p><p class="center">Спасибо за поездку!</p><script>window.onload=()=>setTimeout(()=>window.print(),300);window.onafterprint=()=>window.close();<\/script></body></html>`);w.document.close()}
+refreshFare();
+// Панель администратора открывается NFC-меткой с текстом Admin.
 </script>
 </body>
 </html>
